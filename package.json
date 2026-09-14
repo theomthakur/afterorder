@@ -1,0 +1,60 @@
+{
+  "name": "afterorder",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@9.15.9",
+  "scripts": {
+    "dev": "concurrently -k -n supplier-a,supplier-b,api,web -c yellow,green,magenta,cyan \"corepack pnpm dev:supplier-a\" \"corepack pnpm dev:supplier-b\" \"corepack pnpm dev:api\" \"corepack pnpm dev:web\"",
+    "dev:api": "tsx watch apps/api/src/index.ts",
+    "dev:web": "vite --config apps/web/vite.config.ts",
+    "dev:supplier-a": "SUPPLIER_ID=supplier_a SUPPLIER_NAME='Northstar Supply' SUPPLIER_PORT=4201 SUPPLIER_PRICE=32 SUPPLIER_DAYS=3 SUPPLIER_INITIAL_STOCK=1 SUPPLIER_FAIL_RESERVATIONS=true tsx watch apps/supplier/src/index.ts",
+    "dev:supplier-b": "SUPPLIER_ID=supplier_b SUPPLIER_NAME='Harbor Works' SUPPLIER_PORT=4202 SUPPLIER_PRICE=35 SUPPLIER_DAYS=4 SUPPLIER_INITIAL_STOCK=10 tsx watch apps/supplier/src/index.ts",
+    "build": "tsc --noEmit && vite build --config apps/web/vite.config.ts",
+    "test": "tsx contracts/scripts/compile.ts && vitest run",
+    "smoke": "tsx scripts/smoke.ts",
+    "typecheck": "tsc --noEmit",
+    "contracts:compile": "tsx contracts/scripts/compile.ts",
+    "contracts:deploy": "tsx contracts/scripts/deploy.ts",
+    "doctor": "tsx scripts/doctor.ts"
+  },
+  "dependencies": {
+    "@dynamic-labs/ethereum": "5.8.0",
+    "@dynamic-labs/sdk-react-core": "5.8.0",
+    "@fastify/cors": "11.3.0",
+    "@react-three/drei": "9.122.0",
+    "@react-three/fiber": "8.18.0",
+    "better-sqlite3": "11.8.1",
+    "dotenv": "16.6.1",
+    "fastify": "5.12.4",
+    "fastify-raw-body": "6.0.1",
+    "lucide-react": "0.468.0",
+    "react": "18.3.1",
+    "react-dom": "18.3.1",
+    "three": "0.171.0",
+    "viem": "2.45.3",
+    "zod": "3.24.1"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "7.6.12",
+    "@types/node": "22.10.5",
+    "@types/react": "18.3.18",
+    "@types/react-dom": "18.3.5",
+    "@types/three": "0.171.0",
+    "@vitejs/plugin-react": "4.3.4",
+    "concurrently": "9.1.2",
+    "ganache": "7.9.2",
+    "solc": "0.8.28",
+    "tsx": "4.19.2",
+    "typescript": "5.7.2",
+    "vite": "6.0.7",
+    "vitest": "2.1.8"
+  },
+  "pnpm": {
+    "overrides": {
+      "axios@>=1.15.2 <1.18.0": "1.18.0",
+      "sharp@<0.35.4": "0.35.4",
+      "ws@>=8.0.0 <8.21.0": "8.21.0"
+    }
+  }
+}
