@@ -46,6 +46,10 @@ corepack pnpm dev
 Open `http://localhost:5173` and click **Start supplier failover**. The command starts four
 processes: Northstar on port 4201, Harbor Works on 4202, the API on 4100 and the web app on 5173.
 
+The left navigation also includes a seven-slide presentation (`#presentation`) and an interactive
+system-design explanation (`#system-design`). The repository version of the architecture is in
+[`docs/SYSTEM-DESIGN.md`](docs/SYSTEM-DESIGN.md).
+
 The same full flow can be checked from the terminal while those processes are running:
 
 ```bash

@@ -1,17 +1,25 @@
 import { lazy, Suspense, useEffect, useMemo, useState } from 'react';
-import { Activity, Bell, Box, Check, CircleDollarSign, Command, Minus, PackageCheck, Play, Plus, RotateCcw, ShieldCheck, Store } from 'lucide-react';
+import { Activity, Bell, Check, Command, Minus, PackageCheck, Play, Plus, Presentation as PresentationIcon, RotateCcw, Workflow } from 'lucide-react';
 import type { AgentId, OrderSnapshot } from '../../../packages/shared/src/types.ts';
 import { Scene } from './Scene.tsx';
+import { Presentation } from './Presentation.tsx';
+import { SystemDesign } from './SystemDesign.tsx';
 const MerchantAccess = lazy(() => import('./MerchantAccess.tsx').then((module) => ({ default: module.MerchantAccess })));
 
 const stages = ['received','validating','sourcing','reserving','funding','awaiting_supplier','preparing_shipment','awaiting_dispatch','reconciling','purchase_complete'];
 const labels = ['Order','Validate','Offers','Reserve','Escrow','Supplier','Pack','Dispatch','Reconcile','Complete'];
-const nav = [{ label: 'Command center', icon: Activity }, { label: 'Orders', icon: Box }, { label: 'Suppliers', icon: Store }, { label: 'Budget', icon: CircleDollarSign }, { label: 'Mandates', icon: ShieldCheck }];
+type View = 'command' | 'presentation' | 'system-design';
+const nav: Array<{ view: View; label: string; icon: typeof Activity }> = [
+  { view: 'command', label: 'Command center', icon: Activity },
+  { view: 'presentation', label: 'Presentation', icon: PresentationIcon },
+  { view: 'system-design', label: 'System design', icon: Workflow }
+];
 type Health = { ok: boolean; mode: string; dependencies: { openrouter: boolean; monad: boolean; shopify: boolean; envio: boolean } };
 
 function readable(value: string) { return value.replaceAll('_', ' ').replace(/([a-z])([A-Z])/g, '$1 $2'); }
 
 export function App() {
+  const [view, setView] = useState<View>(() => window.location.hash === '#presentation' ? 'presentation' : window.location.hash === '#system-design' ? 'system-design' : 'command');
   const [snapshot, setSnapshot] = useState<OrderSnapshot | null>(null);
   const [selected, setSelected] = useState<AgentId>('manager');
   const [starting, setStarting] = useState(false);
@@ -20,6 +28,8 @@ export function App() {
   const [reset, setReset] = useState(0);
   const refresh = async () => { const response = await fetch('/api/orders/latest'); if (response.ok) setSnapshot(await response.json()); };
   useEffect(() => { void refresh(); void fetch('/api/health').then((response) => response.json()).then(setHealth); const events = new EventSource('/api/events'); events.addEventListener('order', () => void refresh()); return () => events.close(); }, []);
+  useEffect(() => { const onHash = () => setView(window.location.hash === '#presentation' ? 'presentation' : window.location.hash === '#system-design' ? 'system-design' : 'command'); window.addEventListener('hashchange', onHash); return () => window.removeEventListener('hashchange', onHash); }, []);
+  const openView = (next: View) => { window.location.hash = next === 'command' ? '' : next; setView(next); };
   const start = async () => { setStarting(true); const response = await fetch('/api/demo/start', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({scenario:'supplier_failover'}) }); if (response.ok) { await refresh(); setSelected('manager'); } setStarting(false); };
   const activeIndex = snapshot ? Math.max(0, stages.indexOf(snapshot.status)) : -1;
   const selectedAgent = useMemo(() => snapshot?.agents.find((agent) => agent.id === selected), [snapshot, selected]);
@@ -35,13 +45,12 @@ export function App() {
         {import.meta.env.VITE_DYNAMIC_ENVIRONMENT_ID ? <Suspense fallback={<span className="wallet-loading">Wallet…</span>}><MerchantAccess/></Suspense> : <button className="avatar" aria-label="Sandbox merchant profile">OT</button>}
       </div>
     </header>
-    <section className="layout">
+    <section className={`layout ${view !== 'command' ? 'explain-mode' : ''}`}>
       <aside className="rail" aria-label="Product navigation">
-        {nav.map(({ label, icon: Icon }, index) => <button key={label} className={`rail-button ${index === 0 ? 'active' : ''}`} aria-label={label} title={label}><Icon size={18}/>{index === 0 && <i/>}</button>)}
-        <span className="rail-line"/><button className="rail-button" aria-label="Agent control tower" title="Agent control tower"><Command size={18}/></button>
+        {nav.map(({ view: destination, label, icon: Icon }) => <button key={label} onClick={() => openView(destination)} className={`rail-button ${view === destination ? 'active' : ''}`} aria-label={label} title={label}><Icon size={18}/>{view === destination && <i/>}</button>)}
         <div className="rail-bottom"><span title="Supplier APIs connected"><i/></span></div>
       </aside>
-      <section className="workspace">
+      {view === 'command' ? <><section className="workspace">
         <div className="workspace-heading">
           <div><p className="breadcrumb">OPERATIONS <span>/</span> LIVE COMMAND FLOOR</p><div className="title-line"><h1>{snapshot ? `${snapshot.displayOrder} · ${snapshot.product}` : 'Commerce control tower'}</h1><span className="order-badge"><i/>{snapshot ? readable(snapshot.status) : 'ready'}</span></div><p>{snapshot ? `One ${snapshot.sku} · $${snapshot.retailTotal} Shopify test order` : 'Your agents are ready for the next paid order.'}</p></div>
           <button className="primary" onClick={start} disabled={starting || Boolean(snapshot && snapshot.status !== 'purchase_complete')}><Play size={15}/>{starting ? 'Starting…' : snapshot ? 'Run new order' : 'Start demo order'}</button>
@@ -70,7 +79,7 @@ export function App() {
         <div className="offers">{snapshot?.offers.map((offer) => <div className={`offer ${offer.status}`} key={offer.id}><div><strong>{offer.supplierName}</strong><small>{offer.deliveryDays} business days</small></div><div><b>{offer.total}</b><small>DemoUSD</small></div><span>{readable(offer.status)}</span></div>) ?? <p className="muted">Offers appear when sourcing begins.</p>}</div>
         <div className="section-title"><h3>Live activity</h3><button className="text-btn" onClick={refresh}><RotateCcw size={13}/>Refresh</button></div>
         <div className="feed">{[...(snapshot?.events ?? [])].reverse().map((event) => <article key={event.id}><i/><div><p>{event.message}</p><small>{readable(event.actor)} · {new Date(event.createdAt).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit',second:'2-digit'})}</small></div></article>)}</div>
-      </aside>
+      </aside></> : <section className="explain-workspace">{view === 'presentation' ? <Presentation/> : <SystemDesign/>}</section>}
     </section>
   </main>;
 }

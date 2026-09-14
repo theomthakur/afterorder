@@ -11,6 +11,7 @@ still require external accounts or deployment.
 - Manager, sourcing, policy, reservation, settlement, fulfilment and reconciliation stages.
 - Automatic replanning when the preferred supplier cannot reserve stock.
 - 3D operations room, visible journey, alerts, offers and live backend events.
+- In-product seven-slide presentation and system-design walkthrough, linked from the main rail.
 - Solidity contracts for DemoUSD, merchant mandates and order escrow.
 - Local-chain coverage for the supplier allowlist, funding, acceptance and signed-evidence
   release path.
