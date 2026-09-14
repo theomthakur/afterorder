@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="apps/web/public/afterorder-logo.svg" alt="AfterOrder logo" width="72" />
+</p>
+
 # AfterOrder
 
 **From order to fulfilment, with agents accountable for every purchase.**

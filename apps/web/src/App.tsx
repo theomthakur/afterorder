@@ -1,5 +1,5 @@
 import { lazy, Suspense, useEffect, useMemo, useState } from 'react';
-import { Activity, Bell, Box, Check, CircleDollarSign, Command, Hexagon, Minus, PackageCheck, Play, Plus, RotateCcw, ShieldCheck, Store } from 'lucide-react';
+import { Activity, Bell, Box, Check, CircleDollarSign, Command, Minus, PackageCheck, Play, Plus, RotateCcw, ShieldCheck, Store } from 'lucide-react';
 import type { AgentId, OrderSnapshot } from '../../../packages/shared/src/types.ts';
 import { Scene } from './Scene.tsx';
 const MerchantAccess = lazy(() => import('./MerchantAccess.tsx').then((module) => ({ default: module.MerchantAccess })));
@@ -28,7 +28,7 @@ export function App() {
 
   return <main className="app-shell">
     <header className="topbar">
-      <div className="brand"><span className="brand-mark"><Hexagon size={31}/><Command size={14}/></span><strong>After<span>Order</span></strong><i/><small>AUTONOMOUS COMMERCE</small></div>
+      <div className="brand"><img className="brand-mark" src="/afterorder-logo.svg" alt=""/><strong>After<span>Order</span></strong><i/><small>COMMERCE, IN MOTION</small></div>
       <div className="topbar-right">
         <span className={`network ${health?.dependencies.monad ? 'live' : ''}`}><i/>{health?.dependencies.monad ? 'MONAD TESTNET · LIVE' : 'LOCAL SANDBOX'}</span>
         <button className="icon-button notification-button" aria-label="Notifications"><Bell size={17}/>{alert && <i/>}</button><span className="topbar-divider"/>
@@ -52,13 +52,13 @@ export function App() {
           <div className="order-metric"><span>AGENTS</span><strong>{completeAgents} / {snapshot?.agents.length ?? 6} complete</strong></div>
           <div className="order-metric"><span>SPEND LIMIT</span><strong>40 DemoUSD</strong></div>
         </div>
+        <div className="journey"><div className="journey-heading"><span>LIVE ORDER JOURNEY</span><small>{snapshot ? `${activeIndex + 1} / ${labels.length} · ${readable(snapshot.status)}` : 'Waiting for order'}</small></div><div className="journey-track">{labels.map((label, index) => <div key={label} className={`journey-step ${index <= activeIndex ? 'done' : ''} ${index === activeIndex ? 'current' : ''}`}><span>{index < activeIndex ? <Check size={10}/> : index + 1}</span><small>{label}</small></div>)}</div></div>
         <div className="scene-area">
-          <div className="scene-caption"><i/> LIVE AGENT FLOOR <span>Click a desk to inspect its work</span></div>
+          <div className="scene-caption"><i/> AUTONOMOUS OPERATIONS MAP <span>Select any station to inspect its work</span></div>
           {snapshot ? <Scene snapshot={snapshot} selected={selected} onSelect={setSelected} reset={reset} zoom={zoom}/> : <div className="empty"><div className="empty-orbit"><span>AO</span></div><h2>Agents standing by</h2><p>Start the supplier-failover scenario to activate the floor.</p><button className="primary" onClick={start}><Play size={15}/>Start supplier failover</button></div>}
           <div className="scene-legend"><span><i/>Working</span><span><i className="waiting"/>Monitoring</span><span><i className="complete"/>Complete</span></div>
           <div className="scene-controls"><button onClick={() => setZoom((value) => Math.max(.78, value - .1))} aria-label="Zoom out"><Minus size={14}/></button><span/><button onClick={() => { setZoom(1); setReset((value) => value + 1); }} aria-label="Reset view"><RotateCcw size={14}/></button><span/><button onClick={() => setZoom((value) => Math.min(1.35, value + .1))} aria-label="Zoom in"><Plus size={14}/></button></div>
         </div>
-        <div className="journey"><div className="journey-heading"><span>ORDER JOURNEY</span><small>{snapshot ? `${activeIndex + 1} of ${labels.length}` : 'Waiting'}</small></div><div className="journey-track">{labels.map((label, index) => <div key={label} className={`journey-step ${index <= activeIndex ? 'done' : ''} ${index === activeIndex ? 'current' : ''}`}><span>{index < activeIndex ? <Check size={10}/> : index + 1}</span><small>{label}</small></div>)}</div></div>
       </section>
       <aside className="context">
         <div className="context-eyebrow"><span>AGENT INSPECTOR</span><small>{snapshot?.agents.length ?? 6} desks</small></div>

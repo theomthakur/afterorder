@@ -11,6 +11,7 @@ const name = process.env.SUPPLIER_NAME ?? id;
 const port = Number(process.env.SUPPLIER_PORT ?? (id === 'supplier_a' ? 4201 : 4202));
 const price = Number(process.env.SUPPLIER_PRICE ?? (id === 'supplier_a' ? 32 : 35));
 const deliveryDays = Number(process.env.SUPPLIER_DAYS ?? (id === 'supplier_a' ? 3 : 4));
+const initialStock = Number(process.env.SUPPLIER_INITIAL_STOCK ?? (id === 'supplier_a' ? 0 : 10));
 const serviceToken = process.env.SUPPLIER_SERVICE_TOKEN ?? 'afterorder-local-demo-only';
 const dbPath = path.resolve(`./data/${id}.db`);
 fs.mkdirSync(path.dirname(dbPath), { recursive: true });
@@ -20,7 +21,7 @@ db.exec(`
   CREATE TABLE IF NOT EXISTS quotes (id TEXT PRIMARY KEY, order_id TEXT NOT NULL, sku TEXT NOT NULL, quantity INTEGER NOT NULL, expires_at TEXT NOT NULL);
   CREATE TABLE IF NOT EXISTS reservations (id TEXT PRIMARY KEY, order_id TEXT NOT NULL UNIQUE, quote_id TEXT NOT NULL, status TEXT NOT NULL, created_at TEXT NOT NULL);
 `);
-db.prepare('INSERT OR IGNORE INTO inventory VALUES (?, ?)').run('AO-DESK-01', Number(process.env.SUPPLIER_INITIAL_STOCK ?? (id === 'supplier_a' ? 0 : 10)));
+db.prepare('INSERT OR IGNORE INTO inventory VALUES (?, ?)').run('AO-DESK-01', initialStock);
 
 const app = Fastify({ logger: { level: process.env.LOG_LEVEL ?? 'warn' } });
 app.addHook('onRequest', async (request, reply) => {
@@ -28,6 +29,15 @@ app.addHook('onRequest', async (request, reply) => {
   if (request.headers.authorization !== `Bearer ${serviceToken}`) return reply.code(401).send({ error: 'Unauthorized supplier call' });
 });
 app.get('/health', async () => ({ ok: true, id, name }));
+app.post('/demo/reset', async () => {
+  const reset = db.transaction(() => {
+    db.prepare('DELETE FROM quotes').run();
+    db.prepare('DELETE FROM reservations').run();
+    db.prepare('INSERT OR REPLACE INTO inventory VALUES (?, ?)').run('AO-DESK-01', initialStock);
+  });
+  reset();
+  return { ok: true, available: initialStock };
+});
 
 const quoteSchema = z.object({ orderId: z.string().min(1), sku: z.literal('AO-DESK-01'), quantity: z.number().int().positive().max(10) });
 app.post('/quotes', async (request, reply) => {

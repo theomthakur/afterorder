@@ -18,6 +18,12 @@ async function request<T>(url: string, init: RequestInit): Promise<T> {
   return response.json() as Promise<T>;
 }
 
+export async function resetDemoSuppliers() {
+  await Promise.all(configs.map((supplier) => request<{ ok: boolean }>(`${supplier.url}/demo/reset`, {
+    method: 'POST', headers: headers(), body: '{}'
+  })));
+}
+
 export async function getOffers(input: { orderId: string; sku: string; quantity: number }): Promise<Offer[]> {
   return Promise.all(configs.map(async (supplier) => {
     const result = await request<{ name: string; quoteId: string; total: number; deliveryDays: number; inStock: boolean; expiresAt: string }>(`${supplier.url}/quotes`, {

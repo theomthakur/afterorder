@@ -10,6 +10,7 @@ import { chainIsLive } from './integrations/chain.ts';
 import { verifyMessage } from 'viem';
 import { z } from 'zod';
 import { verifyShopifyWebhook } from './integrations/shopifyWebhook.ts';
+import { resetDemoSuppliers } from './integrations/suppliers.ts';
 
 const app = Fastify({ logger: true });
 await app.register(cors, { origin: process.env.WEB_ORIGIN ?? 'http://localhost:5173', credentials: true });
@@ -24,6 +25,7 @@ app.get<{ Params: { id: string } }>('/api/orders/:id', async (request, reply) =>
 app.post('/api/demo/start', async (request, reply) => {
   const parsed = startDemoSchema.safeParse(request.body ?? {});
   if (!parsed.success) return reply.code(400).send({ error: parsed.error.flatten() });
+  await resetDemoSuppliers();
   const id = crypto.randomUUID();
   createOrder({ id, shopifyOrderId: `sandbox-${id}`, displayOrder: `#AO-${id.slice(0, 4).toUpperCase()}`, sku: 'AO-DESK-01', product: 'Walnut desk organizer', quantity: 1, retailTotal: 60, mode: 'sandbox' });
   void runWorkflow(id, parsed.data.scenario);
