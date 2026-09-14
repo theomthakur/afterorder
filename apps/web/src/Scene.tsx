@@ -12,12 +12,12 @@ const positions: Record<AgentId, V3> = {
 };
 
 const departments: Record<AgentId, { color: string; pale: string; label: string }> = {
-  manager: { color: '#ff7043', pale: '#fff0ea', label: 'Command' },
-  sourcing: { color: '#00a7a0', pale: '#e7f8f6', label: 'Sourcing' },
-  policy: { color: '#e9a227', pale: '#fff5df', label: 'Policy' },
-  logistics: { color: '#3674f4', pale: '#eaf1ff', label: 'Logistics' },
-  purchasing: { color: '#7656d6', pale: '#f0edff', label: 'Purchasing' },
-  reconciliation: { color: '#d4547b', pale: '#fff0f5', label: 'Reconciliation' },
+  manager: { color: '#6c5ce7', pale: '#eeeafd', label: 'Command' },
+  sourcing: { color: '#25bfa5', pale: '#e1f7f1', label: 'Sourcing' },
+  policy: { color: '#f5a524', pale: '#fff4dc', label: 'Policy' },
+  logistics: { color: '#4f7cff', pale: '#eaf0ff', label: 'Logistics' },
+  purchasing: { color: '#ef6a77', pale: '#fff0f1', label: 'Purchasing' },
+  reconciliation: { color: '#9c56c2', pale: '#f5eafb', label: 'Reconciliation' },
 };
 
 const statusCopy: Record<AgentState['status'], string> = {
@@ -30,18 +30,18 @@ function Box({ position, size, color, radius = 0.04 }: { position: V3; size: V3;
 
 function Crate({ position, scale = 1 }: { position: V3; scale?: number }) {
   return <group position={position} scale={scale}>
-    <Box position={[0, .25, 0]} size={[.6, .5, .58]} color="#58778d"/>
-    <Box position={[0, .5, 0]} size={[.62, .025, .6]} color="#ff9a66"/>
-    <Box position={[0, .26, .302]} size={[.09, .48, .018]} color="#ff9a66"/>
-    <Box position={[.16, .31, .315]} size={[.2, .15, .012]} color="#f4fbff"/>
+    <Box position={[0, .25, 0]} size={[.6, .5, .58]} color="#6d6582"/>
+    <Box position={[0, .5, 0]} size={[.62, .025, .6]} color="#ffb84d"/>
+    <Box position={[0, .26, .302]} size={[.09, .48, .018]} color="#ffb84d"/>
+    <Box position={[.16, .31, .315]} size={[.2, .15, .012]} color="#fbfaff"/>
   </group>;
 }
 
 function Rack({ position, rotationY = 0 }: { position: V3; rotationY?: number }) {
   return <group position={position} rotation={[0, rotationY, 0]}>
-    {[-.62, .62].map((x) => [-.3, .3].map((z) => <Box key={`${x}-${z}`} position={[x, .85, z]} size={[.055, 1.7, .055]} color="#294a61"/>))}
+    {[-.62, .62].map((x) => [-.3, .3].map((z) => <Box key={`${x}-${z}`} position={[x, .85, z]} size={[.055, 1.7, .055]} color="#44395f"/>))}
     {[.15, .75, 1.35].map((y, row) => <group key={y}>
-      <Box position={[0, y, 0]} size={[1.35, .08, .72]} color="#4d7189"/>
+      <Box position={[0, y, 0]} size={[1.35, .08, .72]} color="#746b8d"/>
       <Crate position={[-.32, y + .06, 0]} scale={row === 1 ? .7 : .58}/><Crate position={[.3, y + .06, 0]} scale={.55}/>
     </group>)}
   </group>;
@@ -53,12 +53,12 @@ function FloorSign({ text, position, width = 2.3 }: { text: string; position: V3
 
 function Warehouse() {
   return <group>
-    <Box position={[0, -.2, .35]} size={[15.8, .4, 11.8]} color="#19334b" radius={.02}/>
-    <Box position={[0, .015, .35]} size={[15.25, .07, 11.25]} color="#dbe6ee" radius={.03}/>
-    {Array.from({ length: 15 }, (_, index) => <Box key={index} position={[-7 + index, .057, .35]} size={[.012, .014, 11.05]} color={index % 2 ? '#c7d7e2' : '#edf4f8'} radius={.001}/>) }
-    <Box position={[6.25, .075, -.05]} size={[2.1, .035, 10.25]} color="#72889a" radius={.02}/>
-    <Line points={[[5.2, .1, -5], [5.2, .1, 5]]} color="#ffb267" lineWidth={2}/>
-    {Array.from({ length: 16 }, (_, index) => <Box key={index} position={[6.2, .1, -4.7 + index * .62]} size={[.55, .018, .09]} color={index % 2 ? '#ff9b5c' : '#24435a'} radius={.002}/>) }
+    <Box position={[0, -.2, .35]} size={[15.8, .4, 11.8]} color="#2b2148" radius={.02}/>
+    <Box position={[0, .015, .35]} size={[15.25, .07, 11.25]} color="#e4e0ee" radius={.03}/>
+    {Array.from({ length: 15 }, (_, index) => <Box key={index} position={[-7 + index, .057, .35]} size={[.012, .014, 11.05]} color={index % 2 ? '#d4cfdf' : '#f2eff8'} radius={.001}/>) }
+    <Box position={[6.25, .075, -.05]} size={[2.1, .035, 10.25]} color="#7b728f" radius={.02}/>
+    <Line points={[[5.2, .1, -5], [5.2, .1, 5]]} color="#ffbe5b" lineWidth={2}/>
+    {Array.from({ length: 16 }, (_, index) => <Box key={index} position={[6.2, .1, -4.7 + index * .62]} size={[.55, .018, .09]} color={index % 2 ? '#ffb84d' : '#44385f'} radius={.002}/>) }
     <Rack position={[-6.6, .08, -1.2]}/><Rack position={[6.65, .08, -2.2]} rotationY={Math.PI}/>
     <Crate position={[6.2, .1, 3.75]} scale={1.25}/><Crate position={[6.95, .1, 3.9]}/><Crate position={[-6.4, .1, 3.9]} scale={1.15}/>
     <FloorSign text="SHOPIFY INBOUND" position={[-5.9, .105, 4.85]}/><FloorSign text="SUPPLIER DOCKS" position={[6.15, .105, -4.7]}/><FloorSign text="AUTONOMOUS COMMERCE FLOOR" position={[-.25, .105, -5.05]} width={3.5}/>
@@ -67,9 +67,9 @@ function Warehouse() {
 
 function Plant({ position }: { position: V3 }) {
   return <group position={position}>
-    <mesh position={[0, .14, 0]} castShadow><cylinderGeometry args={[.14, .1, .28, 12]}/><meshStandardMaterial color="#ff9970"/></mesh>
-    <mesh position={[0, .4, 0]} castShadow><sphereGeometry args={[.21, 14, 14]}/><meshStandardMaterial color="#168d89"/></mesh>
-    <mesh position={[.1, .56, .02]} castShadow><sphereGeometry args={[.15, 14, 14]}/><meshStandardMaterial color="#37b6ad"/></mesh>
+    <mesh position={[0, .14, 0]} castShadow><cylinderGeometry args={[.14, .1, .28, 12]}/><meshStandardMaterial color="#f0a45e"/></mesh>
+    <mesh position={[0, .4, 0]} castShadow><sphereGeometry args={[.21, 14, 14]}/><meshStandardMaterial color="#178d79"/></mesh>
+    <mesh position={[.1, .56, .02]} castShadow><sphereGeometry args={[.15, 14, 14]}/><meshStandardMaterial color="#42c5aa"/></mesh>
   </group>;
 }
 
@@ -77,12 +77,12 @@ function Avatar({ color, active }: { color: string; active: boolean }) {
   const body = useRef<THREE.Group>(null);
   useFrame(({ clock }) => { if (body.current) body.current.position.y = active ? Math.sin(clock.elapsedTime * 3) * .018 : 0; });
   return <group position={[0, .04, .64]}>
-    <Box position={[0, .35, .05]} size={[.42, .1, .4]} color="#52687a"/><Box position={[0, .57, .22]} size={[.4, .42, .08]} color="#61788a"/>
+    <Box position={[0, .35, .05]} size={[.42, .1, .4]} color="#625a77"/><Box position={[0, .57, .22]} size={[.4, .42, .08]} color="#766d8c"/>
     <group ref={body}>
-      <Box position={[-.1, .3, -.08]} size={[.12, .3, .14]} color="#172f45"/><Box position={[.1, .3, -.08]} size={[.12, .3, .14]} color="#172f45"/>
+      <Box position={[-.1, .3, -.08]} size={[.12, .3, .14]} color="#2b2148"/><Box position={[.1, .3, -.08]} size={[.12, .3, .14]} color="#2b2148"/>
       <Box position={[0, .62, 0]} size={[.38, .44, .26]} color={color} radius={.08}/>
       <mesh position={[0, .98, 0]} castShadow><sphereGeometry args={[.2, 18, 18]}/><meshStandardMaterial color="#d8ad8a"/></mesh>
-      <mesh position={[0, 1.06, .015]} castShadow><sphereGeometry args={[.196, 18, 14, 0, Math.PI * 2, 0, Math.PI * .56]}/><meshStandardMaterial color="#182b3b"/></mesh>
+      <mesh position={[0, 1.06, .015]} castShadow><sphereGeometry args={[.196, 18, 14, 0, Math.PI * 2, 0, Math.PI * .56]}/><meshStandardMaterial color="#241b3f"/></mesh>
       <Box position={[-.23, .67, -.14]} size={[.12, .12, .35]} color={color}/><Box position={[.23, .67, -.14]} size={[.12, .12, .35]} color={color}/>
     </group>
   </group>;
@@ -90,22 +90,22 @@ function Avatar({ color, active }: { color: string; active: boolean }) {
 
 function Monitor({ x, color, active }: { x: number; color: string; active: boolean }) {
   return <group position={[x, 0, 0]}>
-    <Box position={[0, .92, -.12]} size={[.34, .035, .22]} color="#52677a"/><Box position={[0, 1.08, -.15]} size={[.05, .3, .05]} color="#52677a"/>
-    <Box position={[0, 1.24, -.16]} size={[.7, .44, .06]} color="#102a43"/><Box position={[0, 1.24, -.125]} size={[.62, .35, .012]} color="#e8f7fa" radius={.004}/>
-    {[0, 1, 2].map((row) => <Box key={row} position={[-.06, 1.33 - row * .085, -.115]} size={[row === 2 ? .2 : .38, .025, .006]} color={row === 0 ? color : '#a4c4ce'} radius={.002}/>) }
-    <mesh position={[.25, 1.08, -.09]}><sphereGeometry args={[.015, 8, 8]}/><meshBasicMaterial color={active ? '#20c4bd' : '#9aabba'}/></mesh>
+    <Box position={[0, .92, -.12]} size={[.34, .035, .22]} color="#625a77"/><Box position={[0, 1.08, -.15]} size={[.05, .3, .05]} color="#625a77"/>
+    <Box position={[0, 1.24, -.16]} size={[.7, .44, .06]} color="#241b3f"/><Box position={[0, 1.24, -.125]} size={[.62, .35, .012]} color="#f1effb" radius={.004}/>
+    {[0, 1, 2].map((row) => <Box key={row} position={[-.06, 1.33 - row * .085, -.115]} size={[row === 2 ? .2 : .38, .025, .006]} color={row === 0 ? color : '#bdb5cf'} radius={.002}/>) }
+    <mesh position={[.25, 1.08, -.09]}><sphereGeometry args={[.015, 8, 8]}/><meshBasicMaterial color={active ? '#25bfa5' : '#aaa2b8'}/></mesh>
   </group>;
 }
 
 function Desk({ color, central, active }: { color: string; central: boolean; active: boolean }) {
   const width = central ? 2.05 : 1.68;
   return <group>
-    <Box position={[0, .84, 0]} size={[width, .11, .78]} color="#9eb8ca"/>
-    {[-width / 2 + .17, width / 2 - .17].map((x) => <Box key={x} position={[x, .42, .02]} size={[.08, .76, .55]} color="#f2f7fa"/>) }
+    <Box position={[0, .84, 0]} size={[width, .11, .78]} color="#aaa2bd"/>
+    {[-width / 2 + .17, width / 2 - .17].map((x) => <Box key={x} position={[x, .42, .02]} size={[.08, .76, .55]} color="#f7f4fb"/>) }
     {central ? (
       <><Monitor x={-.38} color={color} active={active}/><Monitor x={.4} color={color} active={active}/></>
     ) : <Monitor x={0} color={color} active={active}/>}
-    <Box position={[0, .93, .25]} size={[.46, .03, .16]} color="#dce8ef"/><mesh position={[-width / 2 + .2, 1, .2]} castShadow><cylinderGeometry args={[.07, .06, .15, 12]}/><meshStandardMaterial color="#f7fbfd"/></mesh>
+    <Box position={[0, .93, .25]} size={[.46, .03, .16]} color="#e4e0ee"/><mesh position={[-width / 2 + .2, 1, .2]} castShadow><cylinderGeometry args={[.07, .06, .15, 12]}/><meshStandardMaterial color="#fbfaff"/></mesh>
     <Avatar color={color} active={active}/>
   </group>;
 }
@@ -114,11 +114,11 @@ function Station({ agent, selected, onSelect }: { agent: AgentState; selected: b
   const central = agent.id === 'manager'; const department = departments[agent.id]; const size = central ? 3.35 : 2.65; const active = ['working', 'retrying'].includes(agent.status);
   return <group position={positions[agent.id]}>
     <group onClick={(event) => { event.stopPropagation(); onSelect(); }} onPointerOver={() => { document.body.style.cursor = 'pointer'; }} onPointerOut={() => { document.body.style.cursor = 'auto'; }}>
-      <Box position={[0, .035, 0]} size={[size, .05, size]} color={selected ? '#2f75c9' : '#7891a4'} radius={.1}/><Box position={[0, .066, 0]} size={[size - .1, .012, size - .1]} color={central ? '#b8d3e1' : '#d7e4eb'} radius={.08}/>
-      <Line points={[[ -size/2 + .13, .078, size/2 - .13 ], [ size/2 - .13, .078, size/2 - .13 ], [ size/2 - .13, .078, -size/2 + .13 ], [ -size/2 + .13, .078, -size/2 + .13 ], [ -size/2 + .13, .078, size/2 - .13 ]]} color={selected ? department.color : '#f6fbfd'} lineWidth={selected ? 2 : 1}/>
+      <Box position={[0, .035, 0]} size={[size, .05, size]} color={selected ? '#6c5ce7' : '#887f9c'} radius={.1}/><Box position={[0, .066, 0]} size={[size - .1, .012, size - .1]} color={central ? '#d4ccf2' : '#e2ddec'} radius={.08}/>
+      <Line points={[[ -size/2 + .13, .078, size/2 - .13 ], [ size/2 - .13, .078, size/2 - .13 ], [ size/2 - .13, .078, -size/2 + .13 ], [ -size/2 + .13, .078, -size/2 + .13 ], [ -size/2 + .13, .078, size/2 - .13 ]]} color={selected ? department.color : '#fbfaff'} lineWidth={selected ? 2 : 1}/>
       <group position={[0, .065, .08]}><Desk color={department.color} central={central} active={active}/></group><Plant position={[-size / 2 + .35, .08, -size / 2 + .36]}/>
-      <Box position={[size / 2 - .31, .29, -size / 2 + .38]} size={[.38, .42, .43]} color="#eaf2f6"/>
-      {[0, 1, 2].map((row) => <Box key={row} position={[size / 2 - .31, .52 + row * .05, -size / 2 + .38]} size={[.31, .045, .34]} color={[department.color, '#9fb9c9', '#f7fbfd'][row]!}/>) }
+      <Box position={[size / 2 - .31, .29, -size / 2 + .38]} size={[.38, .42, .43]} color="#f0edf7"/>
+      {[0, 1, 2].map((row) => <Box key={row} position={[size / 2 - .31, .52 + row * .05, -size / 2 + .38]} size={[.31, .045, .34]} color={[department.color, '#b5acc7', '#fbfaff'][row]!}/>) }
     </group>
     <Html center position={[0, central ? 2.38 : 2.18, .04]} zIndexRange={[30, 0]}>
       <button className={`station-label ${selected ? 'selected' : ''} ${central ? 'central' : ''}`} style={{ '--agent': department.color, '--agent-pale': department.pale } as CSSProperties} onClick={onSelect}>
@@ -132,14 +132,14 @@ function Station({ agent, selected, onSelect }: { agent: AgentState; selected: b
 function Vault({ snapshot }: { snapshot: OrderSnapshot }) {
   const state = snapshot.vault.locked ? `${snapshot.vault.locked} LOCKED` : snapshot.vault.paid ? `${snapshot.vault.paid} PAID` : `${snapshot.vault.available} READY`;
   return <group position={[6.3, .1, 1.8]}>
-    <Box position={[0, .72, 0]} size={[1.3, 1.45, 1.05]} color="#102a43" radius={.09}/><Box position={[0, .75, .535]} size={[1.08, 1.15, .04]} color="#dceff3" radius={.03}/>
-    <mesh position={[0, .76, .565]}><torusGeometry args={[.22, .035, 10, 24]}/><meshStandardMaterial color="#18b6ae"/></mesh><Box position={[0, .43, .568]} size={[.45, .1, .018]} color="#ff8654"/>
+    <Box position={[0, .72, 0]} size={[1.3, 1.45, 1.05]} color="#241b3f" radius={.09}/><Box position={[0, .75, .535]} size={[1.08, 1.15, .04]} color="#f0edfa" radius={.03}/>
+    <mesh position={[0, .76, .565]}><torusGeometry args={[.22, .035, 10, 24]}/><meshStandardMaterial color="#8f7ff2"/></mesh><Box position={[0, .43, .568]} size={[.45, .1, .018]} color="#ffb84d"/>
     <Html center position={[0, 1.68, 0]}><div className="vault-label"><span>PAYMENT VAULT</span><strong>{state} DemoUSD</strong></div></Html>
   </group>;
 }
 
 function Connections({ snapshot }: { snapshot: OrderSnapshot }) {
-  return <group>{snapshot.agents.filter((agent) => agent.id !== 'manager').map((agent) => <Line key={agent.id} points={[[positions.manager[0], .1, positions.manager[2]], [positions[agent.id][0], .1, positions[agent.id][2]]]} color={['working', 'retrying'].includes(agent.status) ? departments[agent.id].color : '#b5c8d4'} lineWidth={agent.status === 'working' ? 2 : 1} dashed dashSize={.18} gapSize={.14} transparent opacity={.75}/>)}</group>;
+  return <group>{snapshot.agents.filter((agent) => agent.id !== 'manager').map((agent) => <Line key={agent.id} points={[[positions.manager[0], .1, positions.manager[2]], [positions[agent.id][0], .1, positions[agent.id][2]]]} color={['working', 'retrying'].includes(agent.status) ? departments[agent.id].color : '#c4bdd0'} lineWidth={agent.status === 'working' ? 2 : 1} dashed dashSize={.18} gapSize={.14} transparent opacity={.75}/>)}</group>;
 }
 
 function Camera({ selected, reset, zoom }: { selected: AgentId; reset: number; zoom: number }) {
@@ -158,9 +158,9 @@ class SceneBoundary extends Component<{ children: ReactNode }, { failed: boolean
 export function Scene({ snapshot, selected, onSelect, reset, zoom }: { snapshot: OrderSnapshot; selected: AgentId; onSelect: (id: AgentId) => void; reset: number; zoom: number }) {
   const agents = useMemo(() => snapshot.agents, [snapshot.agents]);
   return <SceneBoundary><Canvas orthographic camera={{ position: [11, 15, 18], zoom: 55, near: .1, far: 100 }} shadows dpr={[1, 1.7]} gl={{ antialias: true }}>
-    <color attach="background" args={['#edf4f8']}/><ambientLight intensity={1.25}/>
+    <color attach="background" args={['#f1eef8']}/><ambientLight intensity={1.25}/>
     <directionalLight position={[-5, 12, 7]} intensity={1.85} castShadow shadow-mapSize={[2048, 2048]} shadow-camera-left={-12} shadow-camera-right={12} shadow-camera-top={12} shadow-camera-bottom={-12} shadow-bias={-.001}/>
     <group position={[0, .15, 0]}><Warehouse/><Connections snapshot={snapshot}/>{agents.map((agent) => <Station key={agent.id} agent={agent} selected={selected === agent.id} onSelect={() => onSelect(agent.id)}/>)}<Vault snapshot={snapshot}/></group>
-    <ContactShadows position={[0, -.25, 0]} opacity={.25} scale={24} blur={2.6} far={9} resolution={512} color="#21394b" frames={1}/><Camera selected={selected} reset={reset} zoom={zoom}/>
+    <ContactShadows position={[0, -.25, 0]} opacity={.24} scale={24} blur={2.6} far={9} resolution={512} color="#2d2346" frames={1}/><Camera selected={selected} reset={reset} zoom={zoom}/>
   </Canvas></SceneBoundary>;
 }
