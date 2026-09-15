@@ -5,11 +5,12 @@
   "type": "module",
   "packageManager": "pnpm@9.15.9",
   "scripts": {
-    "dev": "concurrently -k -n supplier-a,supplier-b,api,web -c yellow,green,magenta,cyan \"corepack pnpm dev:supplier-a\" \"corepack pnpm dev:supplier-b\" \"corepack pnpm dev:api\" \"corepack pnpm dev:web\"",
+    "dev": "concurrently -k -n supplier-a,supplier-b,evidence,api,web -c yellow,green,blue,magenta,cyan \"corepack pnpm dev:supplier-a\" \"corepack pnpm dev:supplier-b\" \"corepack pnpm dev:evidence\" \"corepack pnpm dev:api\" \"corepack pnpm dev:web\"",
     "dev:api": "tsx watch apps/api/src/index.ts",
     "dev:web": "vite --config apps/web/vite.config.ts",
     "dev:supplier-a": "SUPPLIER_ID=supplier_a SUPPLIER_NAME='Northstar Supply' SUPPLIER_PORT=4201 SUPPLIER_PRICE=32 SUPPLIER_DAYS=3 SUPPLIER_INITIAL_STOCK=1 SUPPLIER_FAIL_RESERVATIONS=true tsx watch apps/supplier/src/index.ts",
     "dev:supplier-b": "SUPPLIER_ID=supplier_b SUPPLIER_NAME='Harbor Works' SUPPLIER_PORT=4202 SUPPLIER_PRICE=35 SUPPLIER_DAYS=4 SUPPLIER_INITIAL_STOCK=10 tsx watch apps/supplier/src/index.ts",
+    "dev:evidence": "tsx watch apps/evidence/src/index.ts",
     "build": "tsc --noEmit && vite build --config apps/web/vite.config.ts",
     "test": "tsx contracts/scripts/compile.ts && vitest run",
     "smoke": "tsx scripts/smoke.ts",

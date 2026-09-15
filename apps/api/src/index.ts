@@ -3,7 +3,7 @@ import Fastify from 'fastify';
 import cors from '@fastify/cors';
 import rawBody from 'fastify-raw-body';
 import crypto from 'node:crypto';
-import { claimOperation, createOrder, getLatestOrder, getOrder, getOrderByShopifyId, saveMerchantAuthorization } from './db.ts';
+import { claimOperation, consumeMerchantAuthorizationChallenge, createMerchantAuthorizationChallenge, createOrder, getLatestOrder, getOrder, getOrderByShopifyId, saveMerchantAuthorization } from './db.ts';
 import { runWorkflow, subscribe } from './workflow.ts';
 import { startDemoSchema } from '../../../packages/shared/src/schemas.ts';
 import { chainIsLive } from './integrations/chain.ts';
@@ -32,15 +32,35 @@ app.post('/api/demo/start', async (request, reply) => {
   return reply.code(202).send({ id });
 });
 
-const authorizationSchema = z.object({ address: z.string().regex(/^0x[0-9a-fA-F]{40}$/), message: z.string().min(20).max(500), signature: z.string().regex(/^0x[0-9a-fA-F]+$/) });
+const addressSchema = z.string().regex(/^0x[0-9a-fA-F]{40}$/);
+app.post('/api/merchant/authorization/challenge', async (request, reply) => {
+  const parsed = z.object({ address: addressSchema }).safeParse(request.body);
+  if (!parsed.success) return reply.code(400).send({ error: parsed.error.flatten() });
+  const nonce = crypto.randomUUID();
+  const expiresAt = new Date(Date.now() + 5 * 60_000).toISOString();
+  const message = [
+    'AfterOrder merchant authorization',
+    `Wallet: ${parsed.data.address}`,
+    'Maximum: 40 DemoUSD per order',
+    'Purpose: supplier fulfillment on Monad testnet',
+    `Chain ID: ${process.env.MONAD_CHAIN_ID ?? 10143}`,
+    `Mandate registry: ${process.env.MANDATE_REGISTRY_ADDRESS ?? 'sandbox-not-deployed'}`,
+    `Nonce: ${nonce}`,
+    `Expires: ${expiresAt}`
+  ].join('\n');
+  createMerchantAuthorizationChallenge(parsed.data.address, message, nonce, expiresAt);
+  return { message, nonce, expiresAt };
+});
+
+const authorizationSchema = z.object({ address: addressSchema, message: z.string().min(20).max(1000), signature: z.string().regex(/^0x[0-9a-fA-F]+$/), nonce: z.string().uuid() });
 app.post('/api/merchant/authorization', async (request, reply) => {
   const parsed = authorizationSchema.safeParse(request.body);
   if (!parsed.success) return reply.code(400).send({ error: parsed.error.flatten() });
-  if (!parsed.data.message.includes(`Wallet: ${parsed.data.address}`) || !parsed.data.message.includes('Maximum: 40 DemoUSD per order')) return reply.code(400).send({ error: 'Authorization terms do not match the configured mandate' });
   const valid = await verifyMessage({ address: parsed.data.address as `0x${string}`, message: parsed.data.message, signature: parsed.data.signature as `0x${string}` });
   if (!valid) return reply.code(401).send({ error: 'Wallet signature is invalid' });
+  if (!consumeMerchantAuthorizationChallenge(parsed.data.nonce, parsed.data.address, parsed.data.message)) return reply.code(409).send({ error: 'Authorization challenge is expired, mismatched, or already used' });
   saveMerchantAuthorization(parsed.data.address, parsed.data.message, parsed.data.signature);
-  return { ok: true, address: parsed.data.address };
+  return { ok: true, address: parsed.data.address, mode: process.env.MANDATE_REGISTRY_ADDRESS ? 'signature_verified' : 'sandbox_signature_verified' };
 });
 
 type ShopifyPaidOrder = { id: string | number; name?: string; financial_status?: string; total_price?: string; line_items?: Array<{ sku?: string; name?: string; quantity?: number }> };

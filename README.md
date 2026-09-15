@@ -21,11 +21,15 @@ Works without changing the merchant's 40 DemoUSD limit.
 - A persisted, event-driven agent workflow with automatic supplier failover.
 - A verified and deduplicated Shopify `orders/paid` webhook endpoint.
 - Monad contracts for deposits, bounded mandates, supplier allowlists and dispatch-based escrow.
+- Merchant-selected evidence authority; the purchaser cannot choose its verifier per order.
+- A separate evidence service rechecks supplier dispatch state before signing a release.
 - A live-chain adapter and deployment script; local fallback is visibly labeled `sandbox`.
 - Contract tests that deploy the system, reject an unapproved supplier and release an approved
   35 DemoUSD payment against signed dispatch evidence.
-- Optional Dynamic wallet login and signed merchant authorization, verified by the backend.
-- Optional OpenRouter manager phrasing, capped at one short call in the demo recovery path.
+- Optional Dynamic wallet login and nonce-bound, expiring merchant intent signature. Direct
+  wallet creation of the onchain mandate remains the next Dynamic integration step.
+- Optional OpenRouter purchasing planner for initial selection and failure recovery. It can only
+  choose from policy-approved offers and is disabled by default to prevent accidental spend.
 - A responsive React/Three.js command center driven by persisted backend events over SSE.
 
 No secret is included in the repository. A hash shown in sandbox mode is not presented as an
@@ -43,8 +47,9 @@ cp .env.example .env
 corepack pnpm dev
 ```
 
-Open `http://localhost:5173` and click **Start supplier failover**. The command starts four
-processes: Northstar on port 4201, Harbor Works on 4202, the API on 4100 and the web app on 5173.
+Open `http://localhost:5173` and click **Start supplier failover**. The command starts five
+processes: Northstar on port 4201, Harbor Works on 4202, the evidence verifier on 4300, the API
+on 4100 and the web app on 5173.
 
 The left navigation also includes a seven-slide presentation (`#presentation`) and an interactive
 system-design explanation (`#system-design`). The repository version of the architecture is in
@@ -75,12 +80,14 @@ Copy `.env.example` to `.env` and fill only the services you are ready to exerci
   webhook at `/webhooks/shopify/orders-paid`. Only the mapped `AO-DESK-01` single-item fixture
   is accepted.
 - **Dynamic:** set `VITE_DYNAMIC_ENVIRONMENT_ID`. The header changes from the sandbox avatar to
-  Dynamic's wallet control and allows a signed mandate authorization.
+  Dynamic's wallet control and allows a nonce-bound, expiring mandate-intent signature. This is
+  not yet the onchain `grantRoot` transaction.
 - **Monad/Alchemy:** set the RPC and the six role keys, compile, then run
   `corepack pnpm contracts:deploy`. Put the printed non-secret addresses and mandate ID into
   `.env`, restart, and confirm the header says `MONAD TESTNET · LIVE`.
-- **OpenRouter/KIMI:** set the API key and an exact supported model ID. The workflow uses it only
-  to phrase the manager's recovery action; deterministic code owns policy and money movement.
+- **OpenRouter/KIMI:** set the API key, an exact supported model ID and
+  `ENABLE_MODEL_PLANNER=true`. Without that explicit switch, no paid model call is made.
+  Deterministic code owns policy and money movement.
 - **Envio:** initialize HyperIndex from the deployed `OrderEscrow` ABI and address under Node 22.
   Envio currently requires Node 22+ and `ENVIO_API_TOKEN` for local HyperSync use. Until its
   GraphQL URL is configured, the interface does not claim the indexer is connected.
@@ -109,6 +116,7 @@ production queue.
 
 ```text
 apps/api/                 workflow API and live/sandbox adapters
+apps/evidence/            independent dispatch verification and signing service
 apps/supplier/            independently configured supplier service
 apps/web/                 React UI and 3D command center
 contracts/src/            DemoUSD, MandateRegistry and OrderEscrow

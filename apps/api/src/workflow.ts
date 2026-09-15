@@ -1,9 +1,10 @@
 import { addEvent, getOrder, setAgent, setOrderStatus, updateOffer, upsertOffer } from './db.ts';
 import type { AgentId, Offer } from '../../../packages/shared/src/types.ts';
 import { dispatchOrder, getOffers, reserveOffer } from './integrations/suppliers.ts';
-import { acceptEscrow, fundEscrow, releaseEscrow } from './integrations/chain.ts';
+import { acceptEscrow, fundEscrow, previewMandateSpend, releaseEscrow } from './integrations/chain.ts';
 import { createShopifyFulfilment } from './integrations/shopify.ts';
 import { verifyIndexedRelease } from './integrations/envio.ts';
+import { attestDispatch } from './integrations/evidence.ts';
 
 const listeners = new Set<(orderId: string) => void>();
 export const subscribe = (fn: (orderId: string) => void) => { listeners.add(fn); return () => listeners.delete(fn); };
@@ -20,17 +21,30 @@ function agent(orderId: string, id: AgentId, status: Parameters<typeof setAgent>
   publish(orderId);
 }
 
-async function chooseRecoveryOffer(offers: Offer[], failed: Offer): Promise<{ offer: Offer; summary: string; mode: 'model' | 'deterministic' }> {
-  const alternatives = offers.filter((offer) => offer.id !== failed.id && offer.inStock && offer.total <= 40 && offer.deliveryDays <= 5);
+async function evaluateOffers(offers: Offer[]) {
+  const maxDeliveryDays = Number(process.env.MAX_DELIVERY_DAYS ?? 5);
+  const evaluations = await Promise.all(offers.map(async (offer) => ({ offer, spend: await previewMandateSpend(offer.total) })));
+  return {
+    eligible: evaluations.filter(({ offer, spend }) => offer.inStock && spend.allowed && offer.deliveryDays <= maxDeliveryDays).map(({ offer }) => offer),
+    policyMode: evaluations.some(({ spend }) => spend.mode === 'live') ? 'onchain' : 'sandbox',
+    maxDeliveryDays
+  } as const;
+}
+
+async function chooseOffer(eligibleOffers: Offer[], failed?: Offer): Promise<{ offer: Offer; summary: string; mode: 'model' | 'deterministic' }> {
+  const alternatives = eligibleOffers.filter((offer) => offer.id !== failed?.id);
   const fallback = alternatives.sort((a, b) => a.total - b.total || a.deliveryDays - b.deliveryDays)[0];
-  if (!fallback) throw new Error('The preferred reservation failed and no valid alternative remains');
-  if (!process.env.OPENROUTER_API_KEY) return { offer: fallback, summary: `Switching to ${fallback.supplierName}: ${fallback.total} DemoUSD and ${fallback.deliveryDays} days remain inside the mandate.`, mode: 'deterministic' };
+  if (!fallback) throw new Error(failed ? 'The preferred reservation failed and no valid alternative remains' : 'No policy-approved offer remains');
+  const deterministicSummary = failed
+    ? `Switching to ${fallback.supplierName}: ${fallback.total} DemoUSD and ${fallback.deliveryDays} days remain inside the mandate.`
+    : `Selecting ${fallback.supplierName}: the lowest-cost policy-approved offer at ${fallback.total} DemoUSD.`;
+  if (!process.env.OPENROUTER_API_KEY || process.env.ENABLE_MODEL_PLANNER !== 'true') return { offer: fallback, summary: deterministicSummary, mode: 'deterministic' };
   try {
     const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
       method: 'POST',
       headers: { Authorization: `Bearer ${process.env.OPENROUTER_API_KEY}`, 'Content-Type': 'application/json', 'X-Title': 'AfterOrder' },
       body: JSON.stringify({ model: process.env.OPENROUTER_MODEL, max_tokens: 140, temperature: 0, response_format: { type: 'json_object' },
-        messages: [{ role: 'system', content: 'Choose one offer from the supplied valid alternatives. Return JSON only: {"selectedOfferId":"...","rationale":"one factual sentence"}. Never invent an ID, amount, stock state, or delivery claim.' }, { role: 'user', content: JSON.stringify({ failedOfferId: failed.id, mandate: { maxTotal: 40, maxDeliveryDays: 5 }, alternatives: alternatives.map(({ id, supplierName, total, deliveryDays, inStock }) => ({ id, supplierName, total, deliveryDays, inStock })) }) }] })
+        messages: [{ role: 'system', content: 'You are a purchasing planner. Choose one offer from the supplied policy-approved alternatives. Balance cost and delivery, and if a prior offer failed, do not select it. Return JSON only: {"selectedOfferId":"...","rationale":"one factual sentence"}. Never invent an ID, amount, stock state, or delivery claim.' }, { role: 'user', content: JSON.stringify({ failedOfferId: failed?.id, alternatives: alternatives.map(({ id, supplierName, total, deliveryDays, inStock }) => ({ id, supplierName, total, deliveryDays, inStock })) }) }] })
     });
     if (!response.ok) return { offer: fallback, summary: `Model unavailable; selected ${fallback.supplierName} using the deterministic valid-offer rule.`, mode: 'deterministic' };
     const json = await response.json() as any;
@@ -58,16 +72,21 @@ export async function runWorkflow(orderId: string, scenario: 'supplier_failover'
   offers.forEach((offer) => upsertOffer(orderId, offer));
   event(orderId, 'QuoteReceived', `${offers.length} supplier offers received through separate APIs`, 'sourcing', { offerCount: offers.length });
   await delay(700);
-  const eligible = offers.filter((offer) => offer.inStock && offer.total <= 40 && offer.deliveryDays <= 5).sort((a, b) => a.total - b.total);
+  const policy = await evaluateOffers(offers);
+  const eligible = policy.eligible.sort((a, b) => a.total - b.total);
   if (!eligible.length) throw new Error('No supplier offer satisfies stock, cost and delivery constraints');
-  agent(orderId, 'policy', 'complete', `${eligible.length} offers satisfy the 40 DemoUSD and five-day mandate`);
-  agent(orderId, 'logistics', 'complete', 'Eligible delivery estimates meet the configured deadline');
+  agent(orderId, 'policy', 'complete', `${eligible.length} offers satisfy the ${policy.policyMode === 'onchain' ? 'onchain' : 'sandbox'} spending mandate`);
+  agent(orderId, 'logistics', 'complete', `Eligible delivery estimates meet the configured ${policy.maxDeliveryDays}-day deadline`);
 
   setOrderStatus(orderId, 'reserving');
-  let selected = scenario === 'happy_path' ? eligible.at(-1)! : eligible[0]!;
+  const initialPlan = scenario === 'happy_path'
+    ? { offer: eligible.at(-1)!, summary: `Selecting ${eligible.at(-1)!.supplierName} for the configured happy-path demonstration.`, mode: 'deterministic' as const }
+    : await chooseOffer(eligible);
+  let selected = initialPlan.offer;
   updateOffer(selected.id, 'selected');
-  agent(orderId, 'sourcing', 'working', 'Reserving the lowest-cost valid offer');
-  event(orderId, 'OfferSelected', `${selected.supplierName} selected at ${selected.total} DemoUSD`, 'sourcing');
+  agent(orderId, 'manager', 'working', initialPlan.summary);
+  agent(orderId, 'sourcing', 'working', 'Reserving the selected policy-approved offer');
+  event(orderId, 'OfferSelected', `${selected.supplierName} selected at ${selected.total} DemoUSD`, 'sourcing', { decisionMode: initialPlan.mode, rationale: initialPlan.summary });
   await delay(700);
   if (scenario === 'supplier_failover') {
     try {
@@ -75,7 +94,7 @@ export async function runWorkflow(orderId: string, scenario: 'supplier_failover'
     } catch (error) {
       updateOffer(selected.id, 'reservation_failed');
       event(orderId, 'StockReservationFailed', `${selected.supplierName} could not reserve its last unit`, selected.supplierId as 'supplier_a' | 'supplier_b', { retryable: true, reason: error instanceof Error ? error.message : 'Supplier rejection' });
-      const decision = await chooseRecoveryOffer(eligible, selected);
+      const decision = await chooseOffer(eligible, selected);
       const alternative = decision.offer;
       agent(orderId, 'manager', 'retrying', decision.summary);
       await delay(700);
@@ -111,12 +130,15 @@ export async function runWorkflow(orderId: string, scenario: 'supplier_failover'
   agent(orderId, 'logistics', 'waiting', 'Waiting for the sandbox supplier dispatch event');
   await delay(700);
   const dispatch = await dispatchOrder(orderId, selected.supplierId);
-  event(orderId, 'DispatchAttested', `${dispatch.evidenceId} verified by the evidence bridge`, 'system', { evidenceMode: funding.mode, occurredAt: dispatch.occurredAt });
+  const attestation = await attestDispatch({ orderId, orderKey: funding.orderKey, intentHash: funding.intentHash, evidenceId: dispatch.evidenceId, supplierId: selected.supplierId, occurredAt: dispatch.occurredAt });
+  event(orderId, 'DispatchAttested', `${dispatch.evidenceId} verified by the independent evidence service`, 'system', { evidenceMode: attestation.mode, occurredAt: dispatch.occurredAt });
   agent(orderId, 'logistics', 'complete', `${selected.supplierName} dispatched the order with tracking ${tracking}`);
-  const release = await releaseEscrow({ orderKey: funding.orderKey, orderId, evidenceId: dispatch.evidenceId, intentHash: funding.intentHash });
+  const release = await releaseEscrow({ orderKey: funding.orderKey, orderId, evidenceDigest: attestation.evidenceDigest, signature: attestation.signature });
   event(orderId, 'SupplierPaid', `${selected.total} DemoUSD released to ${selected.supplierName}`, 'chain', { txHash: release.txHash, mode: release.mode });
   const indexed = await verifyIndexedRelease(funding.orderKey, release.txHash);
   if (indexed.verified) event(orderId, 'IndexerVerified', 'Envio independently indexed the supplier release', 'chain', { mode: indexed.mode, txHash: release.txHash });
+  else if (indexed.status === 'mismatch') event(orderId, 'IndexerMismatch', indexed.reason, 'chain', { mode: indexed.mode, txHash: release.txHash, reconciliationRequired: true });
+  else event(orderId, 'IndexerPending', indexed.status === 'not_configured' ? 'Envio is not configured; payment remains confirmed by the chain result' : (indexed.reason ?? 'Envio reconciliation remains pending'), 'chain', { mode: indexed.mode, txHash: release.txHash, reconciliationRequired: indexed.status !== 'not_configured' });
 
   setOrderStatus(orderId, 'reconciling');
   agent(orderId, 'reconciliation', 'working', 'Checking supplier, payment and Shopify records');

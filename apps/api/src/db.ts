@@ -35,6 +35,10 @@ db.exec(`
   CREATE TABLE IF NOT EXISTS merchant_authorizations (
     address TEXT PRIMARY KEY, message TEXT NOT NULL, signature TEXT NOT NULL, verified_at TEXT NOT NULL
   );
+  CREATE TABLE IF NOT EXISTS merchant_authorization_challenges (
+    nonce TEXT PRIMARY KEY, address TEXT NOT NULL, message TEXT NOT NULL,
+    expires_at TEXT NOT NULL, used_at TEXT
+  );
 `);
 try { db.exec('ALTER TABLE orders ADD COLUMN escrow_amount INTEGER NOT NULL DEFAULT 0'); } catch { /* already migrated */ }
 
@@ -106,6 +110,18 @@ export function saveMerchantAuthorization(address: string, message: string, sign
   db.prepare(`INSERT INTO merchant_authorizations VALUES (?,?,?,?)
     ON CONFLICT(address) DO UPDATE SET message=excluded.message, signature=excluded.signature, verified_at=excluded.verified_at`)
     .run(address.toLowerCase(), message, signature, now());
+}
+
+export function createMerchantAuthorizationChallenge(address: string, message: string, nonce: string, expiresAt: string) {
+  db.prepare('INSERT INTO merchant_authorization_challenges (nonce,address,message,expires_at,used_at) VALUES (?,?,?,?,NULL)')
+    .run(nonce, address.toLowerCase(), message, expiresAt);
+}
+
+export function consumeMerchantAuthorizationChallenge(nonce: string, address: string, message: string) {
+  const result = db.prepare(`UPDATE merchant_authorization_challenges SET used_at=?
+    WHERE nonce=? AND address=? AND message=? AND used_at IS NULL AND expires_at>?`)
+    .run(now(), nonce, address.toLowerCase(), message, now());
+  return result.changes === 1;
 }
 
 function hydrate(row: any): OrderSnapshot {

@@ -74,5 +74,10 @@ app.post<{ Params: { orderId: string } }>('/orders/:orderId/dispatch', async (re
   db.prepare("UPDATE reservations SET status='dispatched' WHERE order_id=?").run(request.params.orderId);
   return { status: 'dispatched', evidenceId: `dispatch-${reservation.id}`, occurredAt: new Date().toISOString() };
 });
+app.get<{ Params: { orderId: string } }>('/orders/:orderId/status', async (request, reply) => {
+  const reservation = db.prepare('SELECT * FROM reservations WHERE order_id=?').get(request.params.orderId) as { id: string; status: string } | undefined;
+  if (!reservation) return reply.code(404).send({ error: 'Reservation not found' });
+  return { status: reservation.status, evidenceId: reservation.status === 'dispatched' ? `dispatch-${reservation.id}` : undefined };
+});
 
 await app.listen({ port, host: '127.0.0.1' });

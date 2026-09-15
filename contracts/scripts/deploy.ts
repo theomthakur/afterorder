@@ -42,13 +42,14 @@ const leafB = keccak256(encodePacked(['address'], [supplierB.address]));
 const supplierRoot = leafA < leafB ? keccak256(encodePacked(['bytes32', 'bytes32'], [leafA, leafB])) : keccak256(encodePacked(['bytes32', 'bytes32'], [leafB, leafA]));
 const mandateId = keccak256(toBytes(`afterorder:${merchant.address}:${Date.now()}`));
 const now = Math.floor(Date.now() / 1000);
-await write(registry, 'MandateRegistry', 'grantRoot', [mandateId, purchaser.address, token, parseUnits('40', 6), parseUnits('500', 6), BigInt(now - 60), BigInt(now + 7 * 24 * 3600), supplierRoot, keccak256(toBytes('AfterOrder: approved suppliers; max 40 dUSD per order'))]);
+await write(registry, 'MandateRegistry', 'grantRoot', [mandateId, purchaser.address, token, evidence.address, parseUnits('40', 6), parseUnits('500', 6), BigInt(now - 60), BigInt(now + 7 * 24 * 3600), supplierRoot, keccak256(toBytes('AfterOrder: approved suppliers; max 40 dUSD per order'))]);
 for (const address of [purchaser.address, supplierA.address, supplierB.address, evidence.address]) {
   const hash = await wallet.sendTransaction({ to: address, value: parseEther('0.05') });
   await publicClient.waitForTransactionReceipt({ hash });
 }
 
 console.log('\nDeployment complete. Add these non-secret values to .env:\n');
+console.log(`MANDATE_REGISTRY_ADDRESS=${registry}`);
 console.log(`ORDER_ESCROW_ADDRESS=${escrow}`);
 console.log(`SETTLEMENT_TOKEN_ADDRESS=${token}`);
 console.log(`MANDATE_ID=${mandateId}`);

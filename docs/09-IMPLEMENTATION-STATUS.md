@@ -3,6 +3,9 @@
 Verified locally on 14 September 2026. This page separates working code from integrations that
 still require external accounts or deployment.
 
+The verified next implementation pass is recorded in
+[`10-REVIEW-FIXES.md`](./10-REVIEW-FIXES.md). Those items are deferred work, not current features.
+
 ## Working now
 
 - Paid-order intake, persisted workflow state and a complete supplier-failover journey.
@@ -12,11 +15,15 @@ still require external accounts or deployment.
 - Automatic replanning when the preferred supplier cannot reserve stock.
 - 3D operations room, visible journey, alerts, offers and live backend events.
 - In-product seven-slide presentation and system-design walkthrough, linked from the main rail.
-- Solidity contracts for DemoUSD, merchant mandates and order escrow.
+- Solidity contracts for DemoUSD, merchant mandates and order escrow, including merchant-selected
+  evidence authority and reusable budget restoration after an expired-order refund.
+- Independent evidence service that verifies supplier dispatch state before signing release.
 - Local-chain coverage for the supplier allowlist, funding, acceptance and signed-evidence
   release path.
 - Shopify webhook signature verification and duplicate-event protection.
-- Optional Dynamic authorization and optional bounded OpenRouter recovery wording.
+- Optional Dynamic login with a nonce-bound, expiring intent signature; direct wallet creation
+  of the onchain mandate is still pending.
+- Optional OpenRouter recovery wording, disabled unless explicitly enabled.
 
 ## Implemented, but requires configuration
 

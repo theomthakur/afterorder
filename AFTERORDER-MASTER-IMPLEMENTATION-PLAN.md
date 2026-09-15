@@ -1019,8 +1019,6 @@ OBJECT_STORAGE_ENDPOINT=
 OBJECT_STORAGE_BUCKET=
 OBJECT_STORAGE_ACCESS_KEY=
 OBJECT_STORAGE_SECRET_KEY=
-SLACK_BOT_TOKEN=
-SLACK_NOTIFICATION_CHANNEL=
 ```
 
 Actual Shopify access tokens belong in encrypted installation records. Each service receives
