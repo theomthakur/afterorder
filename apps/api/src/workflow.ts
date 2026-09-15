@@ -29,9 +29,9 @@ function agent(orderId: string, id: AgentId, status: Parameters<typeof setAgent>
   publish(orderId);
 }
 
-async function evaluateOffers(offers: Offer[]) {
+async function evaluateOffers(offers: Offer[], live: boolean) {
   const maxDeliveryDays = Number(process.env.MAX_DELIVERY_DAYS ?? 5);
-  const evaluations = await Promise.all(offers.map(async (offer) => ({ offer, spend: await previewMandateSpend(offer.total) })));
+  const evaluations = await Promise.all(offers.map(async (offer) => ({ offer, spend: await previewMandateSpend(offer.total, live) })));
   return {
     eligible: evaluations.filter(({ offer, spend }) => offer.inStock && spend.allowed && offer.deliveryDays <= maxDeliveryDays).map(({ offer }) => offer),
     policyMode: evaluations.some(({ spend }) => spend.mode === 'live') ? 'onchain' : 'sandbox', maxDeliveryDays
@@ -68,6 +68,7 @@ async function executeStep(orderId: string) {
   const order = getOrder(orderId);
   if (!job || !order || job.step === 'complete' || job.step === 'failed') return false;
   const state = job.state as JobState;
+  const live = order.mode === 'live_test';
   const selected = state.selectedOfferId ? order.offers.find((offer) => offer.id === state.selectedOfferId) : undefined;
   switch (job.step) {
     case 'validate': {
@@ -84,7 +85,7 @@ async function executeStep(orderId: string) {
       const offers = await getOffers({ orderId, sku: order.sku, quantity: order.quantity });
       offers.forEach((offer) => upsertOffer(orderId, offer));
       event(orderId, 'QuoteReceived', `${offers.length} supplier offers received through separate APIs`, 'sourcing', { offerCount: offers.length });
-      const policy = await evaluateOffers(offers);
+      const policy = await evaluateOffers(offers, live);
       if (!policy.eligible.length) throw new Error('No supplier offer satisfies stock, cost and delivery constraints');
       agent(orderId, 'policy', 'complete', `${policy.eligible.length} offers satisfy the ${policy.policyMode} spending mandate`);
       agent(orderId, 'logistics', 'complete', `Eligible estimates meet the configured ${policy.maxDeliveryDays}-day deadline`);
@@ -104,7 +105,7 @@ async function executeStep(orderId: string) {
         if (job.scenario !== 'supplier_failover') throw error;
         updateOffer(selected.id, 'reservation_failed');
         event(orderId, 'StockReservationFailed', `${selected.supplierName} could not reserve its last unit`, selected.supplierId as 'supplier_a' | 'supplier_b', { retryable: true, simulated: true, reason: error instanceof Error ? error.message : 'Supplier rejection' });
-        const policy = await evaluateOffers(order.offers);
+        const policy = await evaluateOffers(order.offers, live);
         const decision = await chooseOffer(policy.eligible, selected);
         updateOffer(decision.offer.id, 'selected'); agent(orderId, 'manager', 'retrying', decision.summary);
         event(orderId, 'PlanRevised', `Manager switched to ${decision.offer.supplierName} within the existing mandate`, 'manager', { decisionMode: decision.mode, rationale: decision.summary });
@@ -121,14 +122,14 @@ async function executeStep(orderId: string) {
       if (!selected) throw new Error('The reserved supplier offer is missing');
       setOrderStatus(orderId, 'funding', { selectedSupplier: selected.supplierName, escrowAmount: selected.total });
       agent(orderId, 'purchasing', 'working', `Checking authority and locking ${selected.total} DemoUSD`);
-      const funding = await fundEscrow({ orderId, supplierAddress: selected.supplierAddress, amount: selected.total });
+      const funding = await fundEscrow({ orderId, supplierAddress: selected.supplierAddress, amount: selected.total, live });
       event(orderId, 'EscrowFunded', `${selected.total} DemoUSD locked for ${selected.supplierName}`, 'chain', { txHash: funding.txHash, mode: funding.mode });
       setOrderStatus(orderId, 'awaiting_supplier', { selectedSupplier: selected.supplierName, chainTxHash: funding.txHash, escrowAmount: selected.total });
       checkpointWorkflow(orderId, 'accept', { ...state, orderKey: funding.orderKey, intentHash: funding.intentHash }); break;
     }
     case 'accept': {
       if (!selected || !state.orderKey) throw new Error('Escrow state is incomplete');
-      const acceptance = await acceptEscrow({ orderKey: state.orderKey, supplierId: selected.supplierId });
+      const acceptance = await acceptEscrow({ orderKey: state.orderKey, supplierId: selected.supplierId, live });
       updateOffer(selected.id, 'accepted');
       event(orderId, 'SupplierAccepted', `${selected.supplierName} verified escrow and accepted the order`, selected.supplierId as 'supplier_a' | 'supplier_b', { txHash: acceptance.txHash, mode: acceptance.mode });
       agent(orderId, 'purchasing', 'complete', 'Supplier order accepted against funded escrow'); checkpointWorkflow(orderId, 'dispatch', state); break;
@@ -140,14 +141,14 @@ async function executeStep(orderId: string) {
       event(orderId, 'LabelPrepared', `Sandbox label prepared with tracking ${tracking}`, 'system', { tracking, evidenceMode: order.mode });
       setOrderStatus(orderId, 'awaiting_dispatch', { trackingNumber: tracking }); agent(orderId, 'logistics', 'waiting', 'Waiting for the supplier dispatch event');
       const dispatch = await dispatchOrder(orderId, selected.supplierId);
-      const attestation = await attestDispatch({ orderId, orderKey: state.orderKey, intentHash: state.intentHash, evidenceId: dispatch.evidenceId, supplierId: selected.supplierId, occurredAt: dispatch.occurredAt });
+      const attestation = await attestDispatch({ orderId, orderKey: state.orderKey, intentHash: state.intentHash, evidenceId: dispatch.evidenceId, supplierId: selected.supplierId, occurredAt: dispatch.occurredAt, live });
       event(orderId, 'DispatchAttested', `${dispatch.evidenceId} verified by the independent evidence service`, 'system', { evidenceMode: attestation.mode, occurredAt: dispatch.occurredAt, evidenceDigest: attestation.evidenceDigest });
       agent(orderId, 'logistics', 'complete', `${selected.supplierName} dispatched the order with tracking ${tracking}`);
       checkpointWorkflow(orderId, 'release', { ...state, tracking, evidenceDigest: attestation.evidenceDigest, evidenceSignature: attestation.signature }); break;
     }
     case 'release': {
       if (!selected || !state.orderKey || !state.evidenceDigest || !state.evidenceSignature) throw new Error('Independent dispatch evidence is incomplete');
-      const release = await releaseEscrow({ orderKey: state.orderKey, orderId, evidenceDigest: state.evidenceDigest, signature: state.evidenceSignature });
+      const release = await releaseEscrow({ orderKey: state.orderKey, orderId, evidenceDigest: state.evidenceDigest, signature: state.evidenceSignature, live });
       event(orderId, 'SupplierPaid', `${selected.total} DemoUSD released to ${selected.supplierName}`, 'chain', { txHash: release.txHash, mode: release.mode });
       enqueueReconciliation(orderId, state.orderKey, release.txHash);
       event(orderId, 'IndexerPending', 'Payment is confirmed; independent indexer reconciliation has been queued', 'chain', { txHash: release.txHash, reconciliationRequired: true });
@@ -156,7 +157,7 @@ async function executeStep(orderId: string) {
     case 'shopify': {
       if (!state.tracking) throw new Error('Tracking is missing');
       setOrderStatus(orderId, 'reconciling'); agent(orderId, 'reconciliation', 'working', 'Checking supplier, payment and Shopify records');
-      const fulfillment = await createShopifyFulfilment({ shopifyOrderId: order.shopifyOrderId, tracking: state.tracking });
+      const fulfillment = await createShopifyFulfilment({ shopifyOrderId: order.shopifyOrderId, tracking: state.tracking, live });
       event(orderId, 'ShopifyFulfilmentConfirmed', `Shopify fulfilment updated with ${state.tracking}`, 'shopify', { mode: fulfillment.mode, fulfillmentId: fulfillment.fulfillmentId });
       checkpointWorkflow(orderId, 'complete', state); break;
     }

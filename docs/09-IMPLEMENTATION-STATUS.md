@@ -9,6 +9,8 @@ The verified next implementation pass is recorded in
 ## Working now
 
 - Paid-order intake, restart-safe SQLite job checkpoints and a complete supplier-failover journey.
+- Recoverable failures pause at their saved checkpoint and can be resumed explicitly without
+  creating a second workflow job.
 - Separate Northstar and Harbor supplier services with authenticated requests and separate
   inventories.
 - Manager, sourcing, policy, reservation, settlement, fulfilment and reconciliation stages.
@@ -25,6 +27,10 @@ The verified next implementation pass is recorded in
   it becomes available only when Dynamic and Monad deployment values are configured.
 - Durable Envio reconciliation jobs with persisted attempts and exponential retry scheduling.
 - Optional OpenRouter recovery wording, disabled unless explicitly enabled.
+- Strict execution-mode boundaries: a sandbox order cannot touch live-chain adapters, and a
+  verified Shopify order is rejected before intake unless real settlement and fulfilment are ready.
+- The command center reads and displays the active mandate's real per-order cap, cumulative
+  allocation, remaining authority and revocation state when Monad is live.
 
 ## Implemented, but requires configuration
 

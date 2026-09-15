@@ -19,6 +19,8 @@ Works without changing the merchant's 40 DemoUSD limit.
 
 - Two independently running supplier APIs with authenticated calls and separate SQLite state.
 - A restart-safe, persisted agent workflow with automatic supplier failover.
+- Recoverable failures pause at their saved checkpoint and can be resumed from the command center
+  without creating a duplicate workflow.
 - A verified and deduplicated Shopify `orders/paid` webhook endpoint.
 - Monad contracts for deposits, bounded mandates, supplier allowlists and dispatch-based escrow.
 - Merchant-selected evidence authority; the purchaser cannot choose its verifier per order.
@@ -29,13 +31,16 @@ Works without changing the merchant's 40 DemoUSD limit.
 - Dynamic wallet onboarding that funds the test escrow and creates the bounded onchain mandate
   directly from the connected merchant wallet when Monad is configured.
 - A durable Envio reconciliation queue that survives API restarts.
+- Live mandate limits and remaining authority displayed from the contract rather than a UI constant.
 - Optional OpenRouter purchasing planner for initial selection and failure recovery. It can only
   choose from policy-approved offers and is disabled by default to prevent accidental spend.
 - A responsive React/Three.js command center driven by persisted backend events over SSE.
 
 No secret is included in the repository. A hash shown in sandbox mode is not presented as an
-onchain transaction. Shopify and Monad switch to live-test mode only when every required value
-is configured.
+onchain transaction. Execution mode belongs to each order: adding credentials cannot make a
+sandbox demo spend testnet assets, and a real Shopify order is rejected before intake unless
+Monad settlement and Shopify fulfilment are both configured. There is no silent live-to-sandbox
+fallback.
 
 ## Run the complete local demo
 

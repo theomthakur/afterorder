@@ -31,6 +31,12 @@ Completed in the second remediation pass:
 - Supplier quote IDs, expirations and wallet addresses persist across restarts.
 - Envio reconciliation uses a separate persisted queue with exponential retry scheduling.
 - A manual resume endpoint retries recoverable blocked workflows without creating another job.
+- Failed workflows pause instead of retrying every two seconds; a coordinator can inspect the
+  error and explicitly resume the saved checkpoint from the command center.
+- Sandbox/live execution is now selected per order. Adding testnet credentials cannot make the
+  local demo spend assets, and live Shopify intake cannot fall back to simulated settlement.
+- Active mandate limits, allocation, remaining authority and revocation status are read from the
+  registry and surfaced in the command center instead of relying on a hardcoded UI balance.
 
 Still outstanding:
 
@@ -94,7 +100,7 @@ authorizations fail safely.
 - If refunded value is reusable, add an escrow-only restoration path associated with the
   original order and mandate.
 - Prevent double restoration and restoration before a valid refund.
-- Show remaining onchain authority in the UI.
+- Show remaining onchain authority in the UI. **Completed locally 15 September.**
 
 Exit check: over-limit spending is rejected onchain and the chosen refund behavior is tested and
 described plainly in the README.

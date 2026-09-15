@@ -10,8 +10,9 @@ async function graphql<T>(query: string, variables: Record<string, unknown>): Pr
   return json.data;
 }
 
-export async function createShopifyFulfilment(input: { shopifyOrderId: string; tracking: string }) {
-  if (!configured()) return { mode: 'sandbox' as const, fulfillmentId: `sandbox-fulfillment-${input.shopifyOrderId}` };
+export async function createShopifyFulfilment(input: { shopifyOrderId: string; tracking: string; live: boolean }) {
+  if (!input.live) return { mode: 'sandbox' as const, fulfillmentId: `sandbox-fulfillment-${input.shopifyOrderId}` };
+  if (!configured()) throw new Error('Live Shopify fulfilment is not fully configured');
   const gid = input.shopifyOrderId.startsWith('gid://') ? input.shopifyOrderId : `gid://shopify/Order/${input.shopifyOrderId}`;
   const found = await graphql<{ order: { fulfillmentOrders: { nodes: Array<{ id: string; status: string }> } } }>(
     `query FulfillmentOrders($id: ID!) { order(id: $id) { fulfillmentOrders(first: 10) { nodes { id status } } } }`, { id: gid }

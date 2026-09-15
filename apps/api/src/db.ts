@@ -161,7 +161,13 @@ export function getWorkflowJob(orderId: string): WorkflowJob | null {
 }
 
 export function getRunnableWorkflowIds() {
-  return (db.prepare("SELECT order_id FROM workflow_jobs WHERE step NOT IN ('complete','failed') ORDER BY updated_at").all() as Array<{ order_id: string }>).map((row) => row.order_id);
+  return (db.prepare("SELECT order_id FROM workflow_jobs WHERE step NOT IN ('complete','failed') AND last_error IS NULL ORDER BY updated_at").all() as Array<{ order_id: string }>).map((row) => row.order_id);
+}
+
+export function resumeWorkflow(orderId: string) {
+  const result = db.prepare("UPDATE workflow_jobs SET last_error=NULL,locked_at=NULL,updated_at=? WHERE order_id=? AND step NOT IN ('complete','failed')")
+    .run(now(), orderId);
+  return result.changes === 1;
 }
 
 export function checkpointWorkflow(orderId: string, step: string, state: Record<string, unknown>) {
@@ -214,6 +220,7 @@ function hydrate(row: any): OrderSnapshot {
     id: e.id, orderId: e.order_id, type: e.type, message: e.message, actor: e.actor,
     createdAt: e.created_at, metadata: JSON.parse(e.metadata)
   }));
+  const reconciliation = db.prepare('SELECT status,attempts,last_error FROM reconciliation_jobs WHERE order_id=?').get(row.id) as { status: 'pending' | 'indexed' | 'mismatch'; attempts: number; last_error?: string } | undefined;
   const amount = Number(row.escrow_amount ?? 0);
   const locked = ['funding', 'awaiting_supplier', 'preparing_shipment', 'awaiting_dispatch', 'reconciling'].includes(row.status) ? amount : 0;
   const paid = row.status === 'purchase_complete' ? amount : 0;
@@ -223,6 +230,7 @@ function hydrate(row: any): OrderSnapshot {
     status: row.status, mode: row.mode, selectedSupplier: row.selected_supplier ?? undefined,
     trackingNumber: row.tracking_number ?? undefined, chainTxHash: row.chain_tx_hash ?? undefined,
     createdAt: row.created_at, updatedAt: row.updated_at, offers, agents, events,
+    reconciliation: reconciliation ? { status: reconciliation.status, attempts: reconciliation.attempts, lastError: reconciliation.last_error ?? undefined } : undefined,
     vault: { deposited: 500, available: 500 - locked - paid, locked, paid, allowanceRemaining: 500 - (locked + paid) }
   };
 }

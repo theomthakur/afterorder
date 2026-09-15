@@ -64,6 +64,7 @@ export interface OrderSnapshot {
   offers: Offer[];
   agents: AgentState[];
   events: OrderEvent[];
+  reconciliation?: { status: 'pending' | 'indexed' | 'mismatch'; attempts: number; lastError?: string };
   vault: { deposited: number; available: number; locked: number; paid: number; allowanceRemaining: number };
 }
 

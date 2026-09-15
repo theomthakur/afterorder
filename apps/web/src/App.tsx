@@ -15,6 +15,7 @@ const nav: Array<{ view: View; label: string; icon: typeof Activity }> = [
   { view: 'system-design', label: 'System design', icon: Workflow }
 ];
 type Health = { ok: boolean; mode: string; dependencies: { openrouter: boolean; monad: boolean; shopify: boolean; envio: boolean } };
+type MandateStatus = { maxPerOrder: string; maxCumulative: string; allocated: string; remaining: string; expiresAt: string; revoked: boolean };
 
 function readable(value: string) { return value.replaceAll('_', ' ').replace(/([a-z])([A-Z])/g, '$1 $2'); }
 
@@ -24,13 +25,19 @@ export function App() {
   const [selected, setSelected] = useState<AgentId>('manager');
   const [starting, setStarting] = useState(false);
   const [health, setHealth] = useState<Health | null>(null);
+  const [mandate, setMandate] = useState<MandateStatus | null>(null);
   const [zoom, setZoom] = useState(1);
   const [reset, setReset] = useState(0);
-  const refresh = async () => { const response = await fetch('/api/orders/latest'); if (response.ok) setSnapshot(await response.json()); };
+  const refresh = async () => {
+    const [orderResponse, mandateResponse] = await Promise.all([fetch('/api/orders/latest'), fetch('/api/merchant/mandate/status')]);
+    if (orderResponse.ok) setSnapshot(await orderResponse.json());
+    if (mandateResponse.ok) setMandate((await mandateResponse.json()).mandate ?? null);
+  };
   useEffect(() => { void refresh(); void fetch('/api/health').then((response) => response.json()).then(setHealth); const events = new EventSource('/api/events'); events.addEventListener('order', () => void refresh()); return () => events.close(); }, []);
   useEffect(() => { const onHash = () => setView(window.location.hash === '#presentation' ? 'presentation' : window.location.hash === '#system-design' ? 'system-design' : 'command'); window.addEventListener('hashchange', onHash); return () => window.removeEventListener('hashchange', onHash); }, []);
   const openView = (next: View) => { window.location.hash = next === 'command' ? '' : next; setView(next); };
   const start = async () => { setStarting(true); const response = await fetch('/api/demo/start', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({scenario:'supplier_failover'}) }); if (response.ok) { await refresh(); setSelected('manager'); } setStarting(false); };
+  const resume = async () => { if (!snapshot) return; setStarting(true); const response = await fetch(`/api/orders/${snapshot.id}/resume`, { method: 'POST' }); if (response.ok) await refresh(); setStarting(false); };
   const activeIndex = snapshot ? Math.max(0, stages.indexOf(snapshot.status)) : -1;
   const selectedAgent = useMemo(() => snapshot?.agents.find((agent) => agent.id === selected), [snapshot, selected]);
   const alert = [...(snapshot?.events ?? [])].reverse().find((item) => ['StockReservationFailed', 'PlanRevised', 'WorkflowBlocked', 'PurchaseCompleted'].includes(item.type));
@@ -59,7 +66,7 @@ export function App() {
           <span className="order-icon"><PackageCheck size={17}/></span><div><span>ACTIVE PURCHASE</span><strong>{snapshot ? `${snapshot.displayOrder} · ${snapshot.product}` : 'No order in progress'}</strong></div>
           <div className="order-metric"><span>SUPPLIER</span><strong>{snapshot?.selectedSupplier ?? 'Evaluating'}</strong></div>
           <div className="order-metric"><span>AGENTS</span><strong>{completeAgents} / {snapshot?.agents.length ?? 6} complete</strong></div>
-          <div className="order-metric"><span>SPEND LIMIT</span><strong>40 DemoUSD</strong></div>
+          <div className="order-metric"><span>SPEND LIMIT</span><strong>{mandate?.maxPerOrder ?? '40'} DemoUSD</strong></div>
         </div>
         <div className="journey"><div className="journey-heading"><span>LIVE ORDER JOURNEY</span><small>{snapshot ? `${activeIndex + 1} / ${labels.length} · ${readable(snapshot.status)}` : 'Waiting for order'}</small></div><div className="journey-track">{labels.map((label, index) => <div key={label} className={`journey-step ${index <= activeIndex ? 'done' : ''} ${index === activeIndex ? 'current' : ''}`}><span>{index < activeIndex ? <Check size={10}/> : index + 1}</span><small>{label}</small></div>)}</div></div>
         <div className="scene-area">
@@ -73,8 +80,8 @@ export function App() {
         <div className="context-eyebrow"><span>AGENT INSPECTOR</span><small>{snapshot?.agents.length ?? 6} desks</small></div>
         <div className="agent-profile"><span className={`agent-portrait ${selectedAgent?.status ?? 'idle'}`}><Command size={21}/><i/></span><div><p>{selected === 'manager' ? 'CONTROL TOWER' : 'SPECIALIST AGENT'}</p><h2>{selectedAgent?.name ?? 'Manager'}</h2></div><span className={`pill ${selectedAgent?.status ?? 'idle'}`}>{readable(selectedAgent?.status ?? 'idle')}</span></div>
         <p className="summary">{selectedAgent?.summary ?? 'Waiting for a paid Shopify order.'}</p>
-        {alert && <div className={`notice ${alert.type === 'WorkflowBlocked' ? 'danger' : ''}`}><Bell size={14}/><div><strong>{readable(alert.type)}</strong><span>{alert.message}</span></div></div>}
-        <div className="facts"><div><span>Selected supplier</span><strong>{snapshot?.selectedSupplier ?? 'Not selected'}</strong></div><div><span>Escrow state</span><strong>{snapshot?.vault.locked ? `${snapshot.vault.locked} locked` : snapshot?.vault.paid ? `${snapshot.vault.paid} paid` : 'Ready'}</strong></div><div><span>Tracking</span><strong>{snapshot?.trackingNumber ?? 'Not created'}</strong></div><div><span>Chain mode</span><strong>{health?.dependencies.monad ? 'Live testnet' : 'Sandbox'}</strong></div></div>
+        {alert && <div className={`notice ${alert.type === 'WorkflowBlocked' ? 'danger' : ''}`}><Bell size={14}/><div><strong>{readable(alert.type)}</strong><span>{alert.message}</span>{snapshot?.status === 'blocked' && <button className="text-btn" onClick={resume} disabled={starting}><RotateCcw size={13}/>{starting ? 'Retrying…' : 'Resume workflow'}</button>}</div></div>}
+        <div className="facts"><div><span>Selected supplier</span><strong>{snapshot?.selectedSupplier ?? 'Not selected'}</strong></div><div><span>Escrow state</span><strong>{snapshot?.vault.locked ? `${snapshot.vault.locked} locked` : snapshot?.vault.paid ? `${snapshot.vault.paid} paid` : 'Ready'}</strong></div><div><span>Tracking</span><strong>{snapshot?.trackingNumber ?? 'Not created'}</strong></div><div><span>Chain mode</span><strong>{health?.dependencies.monad ? 'Live testnet' : 'Sandbox'}</strong></div><div><span>Mandate authority</span><strong>{mandate ? `${mandate.remaining} / ${mandate.maxCumulative} remaining${mandate.revoked ? ' · revoked' : ''}` : '40 per order · sandbox'}</strong></div><div><span>Indexer</span><strong>{snapshot?.reconciliation ? `${readable(snapshot.reconciliation.status)} · ${snapshot.reconciliation.attempts} checks` : health?.dependencies.envio ? 'Ready' : 'Not configured'}</strong></div></div>
         <div className="section-title"><h3>Supplier offers</h3><span>{snapshot?.offers.length ?? 0}</span></div>
         <div className="offers">{snapshot?.offers.map((offer) => <div className={`offer ${offer.status}`} key={offer.id}><div><strong>{offer.supplierName}</strong><small>{offer.deliveryDays} business days</small></div><div><b>{offer.total}</b><small>DemoUSD</small></div><span>{readable(offer.status)}</span></div>) ?? <p className="muted">Offers appear when sourcing begins.</p>}</div>
         <div className="section-title"><h3>Live activity</h3><button className="text-btn" onClick={refresh}><RotateCcw size={13}/>Refresh</button></div>

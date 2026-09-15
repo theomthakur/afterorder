@@ -1,11 +1,12 @@
 import crypto from 'node:crypto';
 import { keccak256, toBytes, type Hex } from 'viem';
 
-export async function attestDispatch(input: { orderId: string; orderKey: Hex; intentHash?: Hex; evidenceId: string; supplierId: string; occurredAt: string }) {
+export async function attestDispatch(input: { orderId: string; orderKey: Hex; intentHash?: Hex; evidenceId: string; supplierId: string; occurredAt: string; live: boolean }) {
   const evidenceDigest = keccak256(toBytes(input.evidenceId));
-  if (!input.intentHash || !process.env.ORDER_ESCROW_ADDRESS || !process.env.MONAD_RPC_URL) {
+  if (!input.live) {
     return { mode: 'sandbox' as const, evidenceDigest, signature: `0x${crypto.createHash('sha256').update(`attestation:${input.evidenceId}`).digest('hex')}` as Hex };
   }
+  if (!input.intentHash || !process.env.ORDER_ESCROW_ADDRESS || !process.env.MONAD_RPC_URL) throw new Error('Live evidence attestation is not fully configured');
   const base = process.env.EVIDENCE_SERVICE_URL ?? 'http://127.0.0.1:4300';
   const response = await fetch(`${base}/attestations/dispatch`, {
     method: 'POST',

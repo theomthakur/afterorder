@@ -3,10 +3,10 @@ import Fastify from 'fastify';
 import cors from '@fastify/cors';
 import rawBody from 'fastify-raw-body';
 import crypto from 'node:crypto';
-import { claimOperation, consumeMerchantAuthorizationChallenge, createMerchantAuthorizationChallenge, createOrder, getLatestOrder, getOrder, getOrderByShopifyId, getRuntimeSetting, saveMerchantAuthorization, setRuntimeSetting } from './db.ts';
+import { claimOperation, consumeMerchantAuthorizationChallenge, createMerchantAuthorizationChallenge, createOrder, getLatestOrder, getOrder, getOrderByShopifyId, getRuntimeSetting, resumeWorkflow, saveMerchantAuthorization, setRuntimeSetting } from './db.ts';
 import { runWorkflow, startWorkers, subscribe } from './workflow.ts';
 import { startDemoSchema } from '../../../packages/shared/src/schemas.ts';
-import { chainIsLive } from './integrations/chain.ts';
+import { chainIsLive, getActiveMandateStatus } from './integrations/chain.ts';
 import { createPublicClient, encodePacked, http, keccak256, parseUnits, toBytes, verifyMessage, type Hex } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
 import { z } from 'zod';
@@ -22,9 +22,11 @@ app.get('/api/health', async () => ({ ok: true, mode: process.env.APP_MODE ?? 's
   shopify: Boolean(process.env.SHOPIFY_ACCESS_TOKEN), envio: Boolean(process.env.ENVIO_GRAPHQL_URL)
 } }));
 app.get('/api/orders/latest', async () => getLatestOrder());
+app.get('/api/merchant/mandate/status', async () => ({ mode: chainIsLive() ? 'onchain' : 'sandbox', mandate: await getActiveMandateStatus() }));
 app.get<{ Params: { id: string } }>('/api/orders/:id', async (request, reply) => getOrder(request.params.id) ?? reply.code(404).send({ error: 'Order not found' }));
 app.post<{ Params: { id: string } }>('/api/orders/:id/resume', async (request, reply) => {
   if (!getOrder(request.params.id)) return reply.code(404).send({ error: 'Order not found' });
+  if (!resumeWorkflow(request.params.id)) return reply.code(409).send({ error: 'Workflow is already running or complete' });
   void runWorkflow(request.params.id);
   return reply.code(202).send({ ok: true, id: request.params.id });
 });
@@ -119,6 +121,8 @@ app.post<{ Body: ShopifyPaidOrder }>('/webhooks/shopify/orders-paid', { config: 
   const raw = (request as typeof request & { rawBody?: string }).rawBody;
   if (!secret || typeof signature !== 'string' || !raw) return reply.code(401).send({ error: 'Shopify webhook verification is not configured' });
   if (!verifyShopifyWebhook(raw, signature, secret)) return reply.code(401).send({ error: 'Invalid Shopify signature' });
+  if (!chainIsLive()) return reply.code(503).send({ error: 'A live merchant mandate and Monad settlement configuration are required before accepting paid orders' });
+  if (!process.env.SHOPIFY_SHOP_DOMAIN || !process.env.SHOPIFY_ACCESS_TOKEN) return reply.code(503).send({ error: 'Shopify fulfilment access is not configured' });
   const webhookId = String(request.headers['x-shopify-webhook-id'] ?? crypto.createHash('sha256').update(raw).digest('hex'));
   if (!claimOperation(`shopify:${webhookId}`, crypto.createHash('sha256').update(raw).digest('hex'))) return { ok: true, duplicate: true };
   const payload = request.body;
