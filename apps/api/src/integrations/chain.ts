@@ -1,6 +1,7 @@
 import crypto from 'node:crypto';
 import { createPublicClient, createWalletClient, encodePacked, http, keccak256, parseUnits, toBytes, type Hex } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
+import { getRuntimeSetting } from '../db.ts';
 
 const escrowAbi = [
   { type: 'function', name: 'fundOrder', stateMutability: 'nonpayable', inputs: [
@@ -19,8 +20,9 @@ const registryAbi = [
   ], outputs: [{ name: '', type: 'bool' }] }
 ] as const;
 
-const required = ['MONAD_RPC_URL', 'PURCHASER_PRIVATE_KEY', 'ORDER_ESCROW_ADDRESS', 'MANDATE_REGISTRY_ADDRESS', 'MANDATE_ID', 'SETTLEMENT_TOKEN_ADDRESS', 'SUPPLIER_A_WALLET', 'SUPPLIER_B_WALLET', 'SUPPLIER_A_PRIVATE_KEY', 'SUPPLIER_B_PRIVATE_KEY'] as const;
-export const chainIsLive = () => required.every((key) => Boolean(process.env[key]));
+const required = ['MONAD_RPC_URL', 'PURCHASER_PRIVATE_KEY', 'ORDER_ESCROW_ADDRESS', 'MANDATE_REGISTRY_ADDRESS', 'SETTLEMENT_TOKEN_ADDRESS', 'SUPPLIER_A_WALLET', 'SUPPLIER_B_WALLET', 'SUPPLIER_A_PRIVATE_KEY', 'SUPPLIER_B_PRIVATE_KEY'] as const;
+const activeMandateId = () => getRuntimeSetting('active_mandate_id') ?? process.env.MANDATE_ID;
+export const chainIsLive = () => required.every((key) => Boolean(process.env[key])) && Boolean(activeMandateId());
 
 function clients(privateKey: Hex) {
   const chain = {
@@ -44,7 +46,7 @@ export async function fundEscrow(input: { orderId: string; supplierAddress?: Hex
   const supplierProof = otherSupplier ? [keccak256(encodePacked(['address'], [otherSupplier]))] : [];
   const txHash = await purchaser.walletClient.writeContract({
     address: process.env.ORDER_ESCROW_ADDRESS as Hex, abi: escrowAbi, functionName: 'fundOrder',
-    args: [orderKey, process.env.MANDATE_ID as Hex, input.supplierAddress, process.env.SETTLEMENT_TOKEN_ADDRESS as Hex, parseUnits(String(input.amount), 6), BigInt(now + 300), BigInt(now + 1800), intentHash, supplierProof]
+    args: [orderKey, activeMandateId() as Hex, input.supplierAddress, process.env.SETTLEMENT_TOKEN_ADDRESS as Hex, parseUnits(String(input.amount), 6), BigInt(now + 300), BigInt(now + 1800), intentHash, supplierProof]
   });
   await purchaser.publicClient.waitForTransactionReceipt({ hash: txHash });
   return { mode: 'live' as const, orderKey, txHash, intentHash };
@@ -52,7 +54,8 @@ export async function fundEscrow(input: { orderId: string; supplierAddress?: Hex
 
 export async function previewMandateSpend(amount: number) {
   const fallbackLimit = Number(process.env.DEMO_MAX_PER_ORDER ?? 40);
-  const configured = Boolean(process.env.MONAD_RPC_URL && process.env.MANDATE_REGISTRY_ADDRESS && process.env.MANDATE_ID && process.env.SETTLEMENT_TOKEN_ADDRESS);
+  const mandateId = activeMandateId();
+  const configured = Boolean(process.env.MONAD_RPC_URL && process.env.MANDATE_REGISTRY_ADDRESS && mandateId && process.env.SETTLEMENT_TOKEN_ADDRESS);
   if (!configured) return { mode: 'sandbox' as const, allowed: amount <= fallbackLimit, maxPerOrder: fallbackLimit };
   const chain = {
     id: Number(process.env.MONAD_CHAIN_ID ?? 10143), name: 'Monad Testnet', nativeCurrency: { name: 'Monad', symbol: 'MON', decimals: 18 },
@@ -63,7 +66,7 @@ export async function previewMandateSpend(amount: number) {
     address: process.env.MANDATE_REGISTRY_ADDRESS as Hex,
     abi: registryAbi,
     functionName: 'previewSpend',
-    args: [process.env.MANDATE_ID as Hex, process.env.SETTLEMENT_TOKEN_ADDRESS as Hex, parseUnits(String(amount), 6)]
+    args: [mandateId as Hex, process.env.SETTLEMENT_TOKEN_ADDRESS as Hex, parseUnits(String(amount), 6)]
   });
   return { mode: 'live' as const, allowed, maxPerOrder: undefined };
 }

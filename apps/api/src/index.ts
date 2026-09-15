@@ -3,11 +3,12 @@ import Fastify from 'fastify';
 import cors from '@fastify/cors';
 import rawBody from 'fastify-raw-body';
 import crypto from 'node:crypto';
-import { claimOperation, consumeMerchantAuthorizationChallenge, createMerchantAuthorizationChallenge, createOrder, getLatestOrder, getOrder, getOrderByShopifyId, saveMerchantAuthorization } from './db.ts';
-import { runWorkflow, subscribe } from './workflow.ts';
+import { claimOperation, consumeMerchantAuthorizationChallenge, createMerchantAuthorizationChallenge, createOrder, getLatestOrder, getOrder, getOrderByShopifyId, getRuntimeSetting, saveMerchantAuthorization, setRuntimeSetting } from './db.ts';
+import { runWorkflow, startWorkers, subscribe } from './workflow.ts';
 import { startDemoSchema } from '../../../packages/shared/src/schemas.ts';
 import { chainIsLive } from './integrations/chain.ts';
-import { verifyMessage } from 'viem';
+import { createPublicClient, encodePacked, http, keccak256, parseUnits, toBytes, verifyMessage, type Hex } from 'viem';
+import { privateKeyToAccount } from 'viem/accounts';
 import { z } from 'zod';
 import { verifyShopifyWebhook } from './integrations/shopifyWebhook.ts';
 import { resetDemoSuppliers } from './integrations/suppliers.ts';
@@ -22,6 +23,11 @@ app.get('/api/health', async () => ({ ok: true, mode: process.env.APP_MODE ?? 's
 } }));
 app.get('/api/orders/latest', async () => getLatestOrder());
 app.get<{ Params: { id: string } }>('/api/orders/:id', async (request, reply) => getOrder(request.params.id) ?? reply.code(404).send({ error: 'Order not found' }));
+app.post<{ Params: { id: string } }>('/api/orders/:id/resume', async (request, reply) => {
+  if (!getOrder(request.params.id)) return reply.code(404).send({ error: 'Order not found' });
+  void runWorkflow(request.params.id);
+  return reply.code(202).send({ ok: true, id: request.params.id });
+});
 app.post('/api/demo/start', async (request, reply) => {
   const parsed = startDemoSchema.safeParse(request.body ?? {});
   if (!parsed.success) return reply.code(400).send({ error: parsed.error.flatten() });
@@ -63,6 +69,49 @@ app.post('/api/merchant/authorization', async (request, reply) => {
   return { ok: true, address: parsed.data.address, mode: process.env.MANDATE_REGISTRY_ADDRESS ? 'signature_verified' : 'sandbox_signature_verified' };
 });
 
+const transactionHashSchema = z.string().regex(/^0x[0-9a-fA-F]{64}$/);
+app.get('/api/merchant/mandate/config', async (request, reply) => {
+  const parsed = z.object({ address: addressSchema }).safeParse(request.query);
+  if (!parsed.success) return reply.code(400).send({ error: parsed.error.flatten() });
+  const publicKeys = ['MONAD_RPC_URL', 'MANDATE_REGISTRY_ADDRESS', 'ORDER_ESCROW_ADDRESS', 'SETTLEMENT_TOKEN_ADDRESS', 'SUPPLIER_A_WALLET', 'SUPPLIER_B_WALLET', 'EVIDENCE_SIGNER_WALLET'] as const;
+  if (publicKeys.some((key) => !process.env[key]) || !process.env.PURCHASER_PRIVATE_KEY) return reply.code(503).send({ error: 'Monad deployment is not configured yet' });
+  const supplierA = process.env.SUPPLIER_A_WALLET as Hex;
+  const supplierB = process.env.SUPPLIER_B_WALLET as Hex;
+  const leafA = keccak256(encodePacked(['address'], [supplierA]));
+  const leafB = keccak256(encodePacked(['address'], [supplierB]));
+  const supplierRoot = leafA < leafB ? keccak256(encodePacked(['bytes32', 'bytes32'], [leafA, leafB])) : keccak256(encodePacked(['bytes32', 'bytes32'], [leafB, leafA]));
+  const purchaser = privateKeyToAccount(process.env.PURCHASER_PRIVATE_KEY as Hex).address;
+  const issuedAt = Math.floor(Date.now() / 1000);
+  const config = {
+    chainId: Number(process.env.MONAD_CHAIN_ID ?? 10143), registry: process.env.MANDATE_REGISTRY_ADDRESS,
+    escrow: process.env.ORDER_ESCROW_ADDRESS, token: process.env.SETTLEMENT_TOKEN_ADDRESS,
+    mandateId: keccak256(toBytes(`afterorder:${parsed.data.address.toLowerCase()}:${crypto.randomUUID()}`)),
+    delegate: purchaser, evidenceSigner: process.env.EVIDENCE_SIGNER_WALLET, perOrder: parseUnits('40', 6).toString(),
+    cumulative: parseUnits('500', 6).toString(), validAfter: issuedAt - 30, expiresAt: issuedAt + 30 * 24 * 3600,
+    supplierRoot, policyCommitment: keccak256(toBytes('AfterOrder: two approved suppliers; max 40 dUSD per order'))
+  };
+  setRuntimeSetting(`pending_mandate:${parsed.data.address.toLowerCase()}`, JSON.stringify(config));
+  return config;
+});
+
+app.post('/api/merchant/mandate/confirm', async (request, reply) => {
+  const parsed = z.object({ address: addressSchema, mandateId: transactionHashSchema, txHash: transactionHashSchema }).safeParse(request.body);
+  if (!parsed.success) return reply.code(400).send({ error: parsed.error.flatten() });
+  const pendingRaw = getRuntimeSetting(`pending_mandate:${parsed.data.address.toLowerCase()}`);
+  if (!pendingRaw) return reply.code(409).send({ error: 'No pending mandate exists for this wallet' });
+  const pending = JSON.parse(pendingRaw) as { mandateId: Hex; registry: Hex; chainId: number };
+  if (pending.mandateId.toLowerCase() !== parsed.data.mandateId.toLowerCase()) return reply.code(409).send({ error: 'Mandate does not match the issued configuration' });
+  const chain = { id: pending.chainId, name: 'Monad Testnet', nativeCurrency: { name: 'Monad', symbol: 'MON', decimals: 18 }, rpcUrls: { default: { http: [process.env.MONAD_RPC_URL!] } } } as const;
+  const client = createPublicClient({ chain, transport: http() });
+  const receipt = await client.waitForTransactionReceipt({ hash: parsed.data.txHash as Hex, timeout: 30_000 });
+  if (receipt.status !== 'success' || receipt.to?.toLowerCase() !== pending.registry.toLowerCase()) return reply.code(409).send({ error: 'Mandate transaction was not confirmed by the configured registry' });
+  const authority = await client.readContract({ address: pending.registry, abi: [{ type: 'function', name: 'authority', stateMutability: 'view', inputs: [{ name: 'id', type: 'bytes32' }], outputs: [{ name: 'owner', type: 'address' }, { name: 'delegate', type: 'address' }, { name: 'token', type: 'address' }, { name: 'evidenceSigner', type: 'address' }, { name: 'supplierRoot', type: 'bytes32' }] }] as const, functionName: 'authority', args: [pending.mandateId] });
+  if (authority[0].toLowerCase() !== parsed.data.address.toLowerCase()) return reply.code(409).send({ error: 'Connected wallet is not the mandate owner' });
+  setRuntimeSetting('active_mandate_id', pending.mandateId);
+  setRuntimeSetting('active_mandate_tx', parsed.data.txHash);
+  return { ok: true, mode: 'onchain', mandateId: pending.mandateId, txHash: parsed.data.txHash };
+});
+
 type ShopifyPaidOrder = { id: string | number; name?: string; financial_status?: string; total_price?: string; line_items?: Array<{ sku?: string; name?: string; quantity?: number }> };
 app.post<{ Body: ShopifyPaidOrder }>('/webhooks/shopify/orders-paid', { config: { rawBody: true } }, async (request, reply) => {
   const secret = process.env.SHOPIFY_WEBHOOK_SECRET;
@@ -94,3 +143,4 @@ app.get('/api/events', async (request, reply) => {
 
 const port = Number(process.env.API_PORT ?? 4100);
 await app.listen({ port, host: '127.0.0.1' });
+startWorkers();

@@ -23,11 +23,17 @@ Completed locally in the first remediation pass:
 - Contract coverage now includes independent signing, evidence replay, refunds, limit enforcement
   and revocation; Envio lag and mismatch have unit coverage.
 
+Completed in the second remediation pass:
+
+- Dynamic submits demo-token funding, escrow deposit and the actual `grantRoot` transaction from
+  the connected merchant wallet; the API verifies ownership before activating the mandate.
+- Workflow stages checkpoint to SQLite and unfinished jobs resume when the API starts.
+- Supplier quote IDs, expirations and wallet addresses persist across restarts.
+- Envio reconciliation uses a separate persisted queue with exponential retry scheduling.
+- A manual resume endpoint retries recoverable blocked workflows without creating another job.
+
 Still outstanding:
 
-- Dynamic wallet must submit the actual onchain mandate transaction.
-- Workflow execution must become a restart-safe persisted job/state machine.
-- Envio retry state must be durable rather than bounded to the current process.
 - Corrected contracts must be deployed and exercised on Monad testnet.
 - Live Shopify, Dynamic and Envio configuration and the final hosted demonstration remain.
 

@@ -18,7 +18,7 @@ Works without changing the merchant's 40 DemoUSD limit.
 ## What works now
 
 - Two independently running supplier APIs with authenticated calls and separate SQLite state.
-- A persisted, event-driven agent workflow with automatic supplier failover.
+- A restart-safe, persisted agent workflow with automatic supplier failover.
 - A verified and deduplicated Shopify `orders/paid` webhook endpoint.
 - Monad contracts for deposits, bounded mandates, supplier allowlists and dispatch-based escrow.
 - Merchant-selected evidence authority; the purchaser cannot choose its verifier per order.
@@ -26,8 +26,9 @@ Works without changing the merchant's 40 DemoUSD limit.
 - A live-chain adapter and deployment script; local fallback is visibly labeled `sandbox`.
 - Contract tests that deploy the system, reject an unapproved supplier and release an approved
   35 DemoUSD payment against signed dispatch evidence.
-- Optional Dynamic wallet login and nonce-bound, expiring merchant intent signature. Direct
-  wallet creation of the onchain mandate remains the next Dynamic integration step.
+- Dynamic wallet onboarding that funds the test escrow and creates the bounded onchain mandate
+  directly from the connected merchant wallet when Monad is configured.
+- A durable Envio reconciliation queue that survives API restarts.
 - Optional OpenRouter purchasing planner for initial selection and failure recovery. It can only
   choose from policy-approved offers and is disabled by default to prevent accidental spend.
 - A responsive React/Three.js command center driven by persisted backend events over SSE.
@@ -79,9 +80,9 @@ Copy `.env.example` to `.env` and fill only the services you are ready to exerci
 - **Shopify:** set the shop domain, Admin API token and webhook secret. Point the paid-order
   webhook at `/webhooks/shopify/orders-paid`. Only the mapped `AO-DESK-01` single-item fixture
   is accepted.
-- **Dynamic:** set `VITE_DYNAMIC_ENVIRONMENT_ID`. The header changes from the sandbox avatar to
-  Dynamic's wallet control and allows a nonce-bound, expiring mandate-intent signature. This is
-  not yet the onchain `grantRoot` transaction.
+- **Dynamic:** set `VITE_DYNAMIC_ENVIRONMENT_ID` and the Monad deployment values. The connected
+  merchant wallet mints demo funds, deposits them into escrow, creates `grantRoot`, and the API
+  verifies the confirmed registry transaction before using the mandate.
 - **Monad/Alchemy:** set the RPC and the six role keys, compile, then run
   `corepack pnpm contracts:deploy`. Put the printed non-secret addresses and mandate ID into
   `.env`, restart, and confirm the header says `MONAD TESTNET · LIVE`.

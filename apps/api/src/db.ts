@@ -22,6 +22,7 @@ db.exec(`
   CREATE TABLE IF NOT EXISTS offers (
     id TEXT PRIMARY KEY, order_id TEXT NOT NULL, supplier_id TEXT NOT NULL, supplier_name TEXT NOT NULL,
     total INTEGER NOT NULL, delivery_days INTEGER NOT NULL, in_stock INTEGER NOT NULL, status TEXT NOT NULL,
+    quote_id TEXT, expires_at TEXT, supplier_address TEXT,
     FOREIGN KEY(order_id) REFERENCES orders(id)
   );
   CREATE TABLE IF NOT EXISTS events (
@@ -39,8 +40,24 @@ db.exec(`
     nonce TEXT PRIMARY KEY, address TEXT NOT NULL, message TEXT NOT NULL,
     expires_at TEXT NOT NULL, used_at TEXT
   );
+  CREATE TABLE IF NOT EXISTS workflow_jobs (
+    order_id TEXT PRIMARY KEY, scenario TEXT NOT NULL, step TEXT NOT NULL, state TEXT NOT NULL DEFAULT '{}',
+    attempts INTEGER NOT NULL DEFAULT 0, last_error TEXT, locked_at TEXT, updated_at TEXT NOT NULL,
+    FOREIGN KEY(order_id) REFERENCES orders(id)
+  );
+  CREATE TABLE IF NOT EXISTS reconciliation_jobs (
+    order_id TEXT PRIMARY KEY, order_key TEXT NOT NULL, tx_hash TEXT NOT NULL, status TEXT NOT NULL,
+    attempts INTEGER NOT NULL DEFAULT 0, next_attempt_at TEXT NOT NULL, last_error TEXT, updated_at TEXT NOT NULL,
+    FOREIGN KEY(order_id) REFERENCES orders(id)
+  );
+  CREATE TABLE IF NOT EXISTS runtime_settings (key TEXT PRIMARY KEY, value TEXT NOT NULL, updated_at TEXT NOT NULL);
 `);
 try { db.exec('ALTER TABLE orders ADD COLUMN escrow_amount INTEGER NOT NULL DEFAULT 0'); } catch { /* already migrated */ }
+for (const statement of [
+  'ALTER TABLE offers ADD COLUMN quote_id TEXT',
+  'ALTER TABLE offers ADD COLUMN expires_at TEXT',
+  'ALTER TABLE offers ADD COLUMN supplier_address TEXT'
+]) try { db.exec(statement); } catch { /* already migrated */ }
 
 const now = () => new Date().toISOString();
 export function createOrder(input: { id: string; shopifyOrderId: string; displayOrder: string; sku: string; product: string; quantity: number; retailTotal: number; mode: 'sandbox' | 'live_test' }) {
@@ -72,9 +89,12 @@ export function setAgent(orderId: string, id: AgentId, status: AgentState['statu
 }
 
 export function upsertOffer(orderId: string, offer: Offer) {
-  db.prepare(`INSERT INTO offers VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-    ON CONFLICT(id) DO UPDATE SET in_stock=excluded.in_stock, status=excluded.status`).run(
-    offer.id, orderId, offer.supplierId, offer.supplierName, offer.total, offer.deliveryDays, offer.inStock ? 1 : 0, offer.status
+  db.prepare(`INSERT INTO offers (id,order_id,supplier_id,supplier_name,total,delivery_days,in_stock,status,quote_id,expires_at,supplier_address)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ON CONFLICT(id) DO UPDATE SET in_stock=excluded.in_stock, status=excluded.status,
+      quote_id=excluded.quote_id, expires_at=excluded.expires_at, supplier_address=excluded.supplier_address`).run(
+    offer.id, orderId, offer.supplierId, offer.supplierName, offer.total, offer.deliveryDays, offer.inStock ? 1 : 0, offer.status,
+    offer.quoteId ?? null, offer.expiresAt ?? null, offer.supplierAddress ?? null
   );
 }
 
@@ -84,6 +104,10 @@ export function addEvent(orderId: string, type: string, message: string, actor: 
   const result = db.prepare('INSERT INTO events (order_id,type,message,actor,created_at,metadata) VALUES (?,?,?,?,?,?)')
     .run(orderId, type, message, actor, now(), JSON.stringify(metadata));
   return Number(result.lastInsertRowid);
+}
+
+export function hasEvent(orderId: string, type: string) {
+  return Boolean(db.prepare('SELECT 1 FROM events WHERE order_id=? AND type=? LIMIT 1').get(orderId, type));
 }
 
 export function getLatestOrder(): OrderSnapshot | null {
@@ -124,10 +148,64 @@ export function consumeMerchantAuthorizationChallenge(nonce: string, address: st
   return result.changes === 1;
 }
 
+export type WorkflowJob = { orderId: string; scenario: 'supplier_failover' | 'happy_path'; step: string; state: Record<string, unknown>; attempts: number; lastError?: string };
+
+export function enqueueWorkflow(orderId: string, scenario: WorkflowJob['scenario']) {
+  db.prepare(`INSERT OR IGNORE INTO workflow_jobs (order_id,scenario,step,state,attempts,last_error,locked_at,updated_at)
+    VALUES (?,?,'validate','{}',0,NULL,NULL,?)`).run(orderId, scenario, now());
+}
+
+export function getWorkflowJob(orderId: string): WorkflowJob | null {
+  const row = db.prepare('SELECT * FROM workflow_jobs WHERE order_id=?').get(orderId) as any;
+  return row ? { orderId: row.order_id, scenario: row.scenario, step: row.step, state: JSON.parse(row.state), attempts: row.attempts, lastError: row.last_error ?? undefined } : null;
+}
+
+export function getRunnableWorkflowIds() {
+  return (db.prepare("SELECT order_id FROM workflow_jobs WHERE step NOT IN ('complete','failed') ORDER BY updated_at").all() as Array<{ order_id: string }>).map((row) => row.order_id);
+}
+
+export function checkpointWorkflow(orderId: string, step: string, state: Record<string, unknown>) {
+  db.prepare('UPDATE workflow_jobs SET step=?,state=?,last_error=NULL,locked_at=NULL,updated_at=? WHERE order_id=?')
+    .run(step, JSON.stringify(state), now(), orderId);
+}
+
+export function recordWorkflowFailure(orderId: string, message: string) {
+  db.prepare('UPDATE workflow_jobs SET attempts=attempts+1,last_error=?,locked_at=NULL,updated_at=? WHERE order_id=?').run(message, now(), orderId);
+}
+
+export function enqueueReconciliation(orderId: string, orderKey: string, txHash: string) {
+  db.prepare(`INSERT INTO reconciliation_jobs (order_id,order_key,tx_hash,status,attempts,next_attempt_at,last_error,updated_at)
+    VALUES (?,?,?,'pending',0,?,NULL,?) ON CONFLICT(order_id) DO UPDATE SET order_key=excluded.order_key,
+    tx_hash=excluded.tx_hash,status='pending',next_attempt_at=excluded.next_attempt_at,updated_at=excluded.updated_at`)
+    .run(orderId, orderKey, txHash, now(), now());
+}
+
+export function getDueReconciliations() {
+  return db.prepare("SELECT * FROM reconciliation_jobs WHERE status='pending' AND next_attempt_at<=? ORDER BY updated_at LIMIT 20").all(now()) as Array<any>;
+}
+
+export function updateReconciliation(orderId: string, status: 'pending' | 'indexed' | 'mismatch', error?: string) {
+  const row = db.prepare('SELECT attempts FROM reconciliation_jobs WHERE order_id=?').get(orderId) as { attempts: number } | undefined;
+  const attempts = (row?.attempts ?? 0) + 1;
+  const delayMs = Math.min(60_000, 1_000 * 2 ** Math.min(attempts - 1, 6));
+  db.prepare('UPDATE reconciliation_jobs SET status=?,attempts=?,next_attempt_at=?,last_error=?,updated_at=? WHERE order_id=?')
+    .run(status, attempts, new Date(Date.now() + delayMs).toISOString(), error ?? null, now(), orderId);
+}
+
+export function setRuntimeSetting(key: string, value: string) {
+  db.prepare(`INSERT INTO runtime_settings (key,value,updated_at) VALUES (?,?,?)
+    ON CONFLICT(key) DO UPDATE SET value=excluded.value,updated_at=excluded.updated_at`).run(key, value, now());
+}
+
+export function getRuntimeSetting(key: string) {
+  return (db.prepare('SELECT value FROM runtime_settings WHERE key=?').get(key) as { value: string } | undefined)?.value;
+}
+
 function hydrate(row: any): OrderSnapshot {
   const offers = (db.prepare('SELECT * FROM offers WHERE order_id=? ORDER BY total').all(row.id) as any[]).map((o) => ({
     id: o.id, supplierId: o.supplier_id, supplierName: o.supplier_name, total: o.total,
-    currency: 'DemoUSD' as const, deliveryDays: o.delivery_days, inStock: Boolean(o.in_stock), status: o.status
+    currency: 'DemoUSD' as const, deliveryDays: o.delivery_days, inStock: Boolean(o.in_stock), status: o.status,
+    quoteId: o.quote_id ?? undefined, expiresAt: o.expires_at ?? undefined, supplierAddress: o.supplier_address ?? undefined
   }));
   const agents = (db.prepare('SELECT * FROM agents WHERE order_id=?').all(row.id) as any[]).map((a) => ({
     id: a.id, name: a.name, status: a.status, summary: a.summary, updatedAt: a.updated_at

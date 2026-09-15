@@ -1,6 +1,6 @@
 # Implementation status
 
-Verified locally on 14 September 2026. This page separates working code from integrations that
+Verified locally on 15 September 2026. This page separates working code from integrations that
 still require external accounts or deployment.
 
 The verified next implementation pass is recorded in
@@ -8,7 +8,7 @@ The verified next implementation pass is recorded in
 
 ## Working now
 
-- Paid-order intake, persisted workflow state and a complete supplier-failover journey.
+- Paid-order intake, restart-safe SQLite job checkpoints and a complete supplier-failover journey.
 - Separate Northstar and Harbor supplier services with authenticated requests and separate
   inventories.
 - Manager, sourcing, policy, reservation, settlement, fulfilment and reconciliation stages.
@@ -21,8 +21,9 @@ The verified next implementation pass is recorded in
 - Local-chain coverage for the supplier allowlist, funding, acceptance and signed-evidence
   release path.
 - Shopify webhook signature verification and duplicate-event protection.
-- Optional Dynamic login with a nonce-bound, expiring intent signature; direct wallet creation
-  of the onchain mandate is still pending.
+- Dynamic wallet flow for demo-token funding, escrow deposit and direct onchain mandate creation;
+  it becomes available only when Dynamic and Monad deployment values are configured.
+- Durable Envio reconciliation jobs with persisted attempts and exponential retry scheduling.
 - Optional OpenRouter recovery wording, disabled unless explicitly enabled.
 
 ## Implemented, but requires configuration
