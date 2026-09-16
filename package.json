@@ -12,11 +12,12 @@
     "dev:supplier-b": "SUPPLIER_ID=supplier_b SUPPLIER_NAME='Harbor Works' SUPPLIER_PORT=4202 SUPPLIER_PRICE=35 SUPPLIER_DAYS=4 SUPPLIER_INITIAL_STOCK=10 tsx watch apps/supplier/src/index.ts",
     "dev:evidence": "tsx watch apps/evidence/src/index.ts",
     "build": "tsc --noEmit && vite build --config apps/web/vite.config.ts",
-    "test": "tsx contracts/scripts/compile.ts && vitest run",
+    "test": "tsx contracts/scripts/compile.ts && vitest run tests",
     "smoke": "tsx scripts/smoke.ts",
     "typecheck": "tsc --noEmit",
     "contracts:compile": "tsx contracts/scripts/compile.ts",
     "contracts:deploy": "tsx contracts/scripts/deploy.ts",
+    "wallets:bootstrap": "tsx scripts/bootstrap-test-wallets.ts",
     "doctor": "tsx scripts/doctor.ts"
   },
   "dependencies": {

@@ -1,0 +1,21 @@
+{
+  "name": "afterorder-indexer",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "codegen": "envio codegen",
+    "dev": "envio dev",
+    "start": "envio start",
+    "test": "vitest run --test-timeout=20000",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": { "envio": "3.12.0" },
+  "devDependencies": {
+    "@types/node": "24.12.2",
+    "typescript": "6.0.3",
+    "vitest": "4.1.0"
+  },
+  "engines": { "node": ">=22.0.0" },
+  "packageManager": "pnpm@9.15.9"
+}

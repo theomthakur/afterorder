@@ -8,5 +8,7 @@ dist/
 coverage/
 data/
 artifacts/
+.envio/
+indexer/config.local.yaml
 *.log
 .DS_Store

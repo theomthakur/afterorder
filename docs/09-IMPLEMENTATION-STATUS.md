@@ -26,6 +26,8 @@ The verified next implementation pass is recorded in
 - Dynamic wallet flow for demo-token funding, escrow deposit and direct onchain mandate creation;
   it becomes available only when Dynamic and Monad deployment values are configured.
 - Durable Envio reconciliation jobs with persisted attempts and exponential retry scheduling.
+- A complete Envio HyperIndex package for funding, acceptance, release and refund events, with
+  generated types and two passing handler tests under Node 22.
 - Optional OpenRouter recovery wording, disabled unless explicitly enabled.
 - Strict execution-mode boundaries: a sandbox order cannot touch live-chain adapters, and a
   verified Shopify order is rejected before intake unless real settlement and fulfilment are ready.
@@ -37,10 +39,10 @@ The verified next implementation pass is recorded in
 | Integration | What remains outside the repository |
 |---|---|
 | Shopify | Development store, webhook secret, Admin token and a reachable callback URL |
-| Monad | Testnet RPC, funded role wallets, deployed contract addresses and mandate ID |
+| Monad | Fund the generated merchant test wallet, then deploy contracts; the public testnet RPC and five isolated role wallets are already configured locally |
 | Dynamic | Project environment ID and an allowed application origin |
 | OpenRouter | API key and supported model ID |
-| Envio | Node 22 environment, API token, deployed contract address and hosted GraphQL endpoint |
+| Envio | API token, deployed contract address and hosted GraphQL endpoint; source, config and tests are complete |
 
 Without these values, the product deliberately shows `sandbox` instead of pretending a remote
 operation happened. Supplier services, persistence, agent orchestration and the full UI journey
@@ -75,8 +77,10 @@ On 16 September 2026, the clean verification pass completed successfully:
 - The running five-service sandbox completed an autonomous supplier failover with **15 persisted
   events**, ending with Harbor Works selected, paid, dispatched and reconciled.
 - OpenRouter remained disabled, so the verification consumed no model credits.
+- The isolated Envio suite also passed **2 handler tests**, code generation and strict typecheck
+  under Node 22.
 
 The local product is complete for demonstration. The remaining work is external activation:
-funded Monad testnet roles, deployed addresses, Dynamic configuration, a Shopify development
+test MON funding for the generated merchant wallet, deployed addresses, Dynamic configuration, a Shopify development
 store, Envio deployment and a hosted URL. Those require account values that are not present in
 the repository and cannot be truthfully represented as completed.

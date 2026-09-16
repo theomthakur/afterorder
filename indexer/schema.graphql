@@ -1,0 +1,42 @@
+type OrderFunding {
+  id: ID!
+  orderId: String!
+  mandateId: String!
+  supplier: String!
+  token: String!
+  amount: BigInt!
+  intentHash: String!
+  transactionHash: String!
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+}
+
+type OrderAcceptance {
+  id: ID!
+  orderId: String!
+  supplier: String!
+  transactionHash: String!
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+}
+
+type OrderRelease {
+  id: ID!
+  orderId: String!
+  supplier: String!
+  amount: BigInt!
+  evidenceDigest: String!
+  transactionHash: String!
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+}
+
+type OrderRefund {
+  id: ID!
+  orderId: String!
+  merchant: String!
+  amount: BigInt!
+  transactionHash: String!
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+}

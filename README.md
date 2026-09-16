@@ -88,15 +88,17 @@ Copy `.env.example` to `.env` and fill only the services you are ready to exerci
 - **Dynamic:** set `VITE_DYNAMIC_ENVIRONMENT_ID` and the Monad deployment values. The connected
   merchant wallet mints demo funds, deposits them into escrow, creates `grantRoot`, and the API
   verifies the confirmed registry transaction before using the mandate.
-- **Monad/Alchemy:** set the RPC and the six role keys, compile, then run
-  `corepack pnpm contracts:deploy`. Put the printed non-secret addresses and mandate ID into
-  `.env`, restart, and confirm the header says `MONAD TESTNET · LIVE`.
+- **Monad:** run `corepack pnpm wallets:bootstrap`, fund only the printed merchant address with
+  test MON, compile, then run `corepack pnpm contracts:deploy`. The deployer verifies chain ID and
+  balance, deploys the contracts, updates ignored local configuration and prepares Envio's local
+  config. Confirm the header says `MONAD TESTNET · LIVE`.
 - **OpenRouter/KIMI:** set the API key, an exact supported model ID and
   `ENABLE_MODEL_PLANNER=true`. Without that explicit switch, no paid model call is made.
   Deterministic code owns policy and money movement.
-- **Envio:** initialize HyperIndex from the deployed `OrderEscrow` ABI and address under Node 22.
-  Envio currently requires Node 22+ and `ENVIO_API_TOKEN` for local HyperSync use. Until its
-  GraphQL URL is configured, the interface does not claim the indexer is connected.
+- **Envio:** the complete HyperIndex package is in `indexer/` and has its own tests. It requires
+  Node 22+, an Envio API token and a deployed `OrderEscrow`. The contract deployer generates
+  `indexer/config.local.yaml`; run the indexer with that config and put its GraphQL URL in the root
+  `.env`. Until then, the interface does not claim the indexer is connected.
 
 ## Architecture
 

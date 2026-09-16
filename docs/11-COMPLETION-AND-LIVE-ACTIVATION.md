@@ -9,8 +9,8 @@ recovers from the configured supplier stock race, verifies dispatch through a se
 service, releases sandbox escrow, reconciles Shopify state and renders the same events in the 3D
 command center.
 
-The project must not be called fully live until one public Monad testnet journey exists. No `.env`
-file or deployment credentials are present in this repository today.
+The project must not be called fully live until one public Monad testnet journey exists. Five
+fresh test-only role keys now exist only in the ignored local `.env`; no secret is in the repository.
 
 ## Evidence already available
 
@@ -27,19 +27,19 @@ file or deployment credentials are present in this repository today.
 
 Complete these in order after the required account values are available:
 
-1. Create five fresh Monad testnet role wallets: merchant, purchaser, supplier A, supplier B and
-   evidence signer. Never reuse personal or mainnet wallets.
-2. Fund the merchant wallet and confirm the RPC reports chain ID `10143`.
-3. Copy `.env.example` to an ignored `.env`, add the RPC and role keys, then run
-   `corepack pnpm contracts:deploy`.
-4. Store only the printed non-secret addresses and mandate ID in the deployment record. Never
-   commit private keys.
+1. Five fresh Monad testnet role wallets have been created locally: merchant, purchaser,
+   supplier A, supplier B and evidence signer. Never reuse them on mainnet.
+2. Fund the printed merchant wallet and confirm the RPC reports chain ID `10143`.
+3. Run `corepack pnpm contracts:deploy`. It refuses the wrong chain or an unfunded wallet, then
+   writes non-secret deployment metadata and local configuration after success.
+4. Never commit `.env`, `data/monad-testnet-deployment.json` or private keys.
 5. Run `corepack pnpm run doctor`; it must report Monad and contracts as live.
 6. Configure a Dynamic development project and allow the hosted and local origins. Confirm that
    the connected merchant wallet creates the mandate transaction rather than merely logging in.
 7. Create the Shopify development product mapping for `AO-DESK-01`, configure the signed
    `orders/paid` webhook and confirm duplicate delivery creates exactly one order.
-8. Deploy the Envio indexer against the actual `OrderEscrow` address. Confirm the payment stays
+8. Add the Envio API token and deploy the existing indexer package against the actual
+   `OrderEscrow` address. Confirm the payment stays
    complete while indexing is pending and later becomes indexed without rerunning settlement.
 9. Run one complete public testnet order and record the mandate, funding, acceptance and release
    transaction links.

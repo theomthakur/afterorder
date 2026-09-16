@@ -1,19 +1,27 @@
-# Envio HyperIndex handoff
+# AfterOrder Envio indexer
 
-Generate this indexer only after `OrderEscrow` is deployed. Current Envio HyperIndex requires
-Node 22 or newer; the main prototype currently runs on Node 18.
+This package indexes the `OrderEscrow` lifecycle on Monad testnet. It stores funded,
+accepted, released and refunded events. The API uses `OrderRelease` to independently
+reconcile a supplier payment after the transaction has succeeded.
 
-1. Switch to Node 22 and run `pnpx envio init` in this directory.
-2. Choose **Contract Import**, then **Local ABI**.
-3. Use `../artifacts/contracts/OrderEscrow.json` and the deployed escrow address.
-4. Use custom EVM chain ID `10143` and the Alchemy Monad RPC as the realtime RPC.
-5. Index `OrderFunded`, `OrderAccepted`, `OrderReleased` and `OrderRefunded` from the deployment
-   block.
-6. Name the release entity `OrderRelease` with `orderId`, `supplier`, `amount`,
-   `transactionHash`, block and timestamp fields; this matches the API's verification query.
-   Do not store customer names, addresses or Shopify IDs onchain.
-7. Add `ENVIO_API_TOKEN` for local HyperSync, run the generated tests, then `pnpm dev`.
-8. Put the resulting GraphQL endpoint in `ENVIO_GRAPHQL_URL` and restart AfterOrder.
+## Activate after contract deployment
 
-This directory is intentionally a handoff rather than fake generated code. Generated handler
-types depend on the deployed address, selected events and the current Envio CLI.
+1. Replace the placeholder address in `config.yaml` with `ORDER_ESCROW_ADDRESS`.
+2. Replace `start_block: 0` with the deployment block printed by `pnpm contracts:deploy`.
+3. Create an Envio API token at <https://envio.dev/app/api-tokens> and copy
+   `.env.example` to `.env` inside this directory.
+4. Use Node 22 or newer, then run:
+
+```bash
+corepack pnpm install
+corepack pnpm codegen
+corepack pnpm test
+corepack pnpm dev
+```
+
+The local GraphQL endpoint is normally `http://localhost:8080/v1/graphql`. Put the
+actual endpoint in the root `ENVIO_GRAPHQL_URL`. Envio Cloud can be used instead of
+the local Docker runtime.
+
+No Shopify customer data is indexed. Only contract event identifiers, supplier
+wallets, token amounts, transaction hashes and block metadata are stored.
