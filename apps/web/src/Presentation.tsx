@@ -37,7 +37,7 @@ const SLIDES: Slide[] = [
   {
     label: 'Close', eyebrow: 'WHAT EXISTS TODAY',
     title: <>Autonomy that survives a failure<br/><span>and shows its work.</span></>,
-    body: <><ul className="proof-list"><li><Check size={17}/>Complete persisted supplier-failover workflow</li><li><Check size={17}/>Authenticated supplier services with separate inventory</li><li><Check size={17}/>Monad mandate and escrow contracts with local-chain coverage</li><li><Check size={17}/>Verified Shopify webhook intake and fulfilment adapter</li><li><Check size={17}/>Six automated tests and a repeatable 14-event smoke flow</li></ul><p className="pitch-foot">github.com/theomthakur/afterorder</p></>
+    body: <><ul className="proof-list"><li><Check size={17}/>Complete persisted supplier-failover workflow</li><li><Check size={17}/>Authenticated supplier services with separate inventory</li><li><Check size={17}/>Monad mandate and escrow contracts with local-chain coverage</li><li><Check size={17}/>Verified Shopify webhook intake and fulfilment adapter</li><li><Check size={17}/>17 automated checks and a repeatable 15-event smoke flow</li></ul><p className="pitch-foot">github.com/theomthakur/afterorder</p></>
   }
 ];
 

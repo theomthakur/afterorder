@@ -1,6 +1,6 @@
 # Implementation status
 
-Verified locally on 15 September 2026. This page separates working code from integrations that
+Verified locally on 16 September 2026. This page separates working code from integrations that
 still require external accounts or deployment.
 
 The verified next implementation pass is recorded in
@@ -64,3 +64,19 @@ corepack pnpm build
 corepack pnpm dev
 corepack pnpm smoke
 ```
+
+## Latest verification result
+
+On 16 September 2026, the clean verification pass completed successfully:
+
+- TypeScript typecheck passed.
+- All **17 tests across 6 test files** passed, including five local-chain contract scenarios.
+- The production web build completed.
+- The running five-service sandbox completed an autonomous supplier failover with **15 persisted
+  events**, ending with Harbor Works selected, paid, dispatched and reconciled.
+- OpenRouter remained disabled, so the verification consumed no model credits.
+
+The local product is complete for demonstration. The remaining work is external activation:
+funded Monad testnet roles, deployed addresses, Dynamic configuration, a Shopify development
+store, Envio deployment and a hosted URL. Those require account values that are not present in
+the repository and cannot be truthfully represented as completed.
