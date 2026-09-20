@@ -12,12 +12,12 @@ const positions: Record<AgentId, V3> = {
 };
 
 const departments: Record<AgentId, { color: string; pale: string; label: string }> = {
-  manager: { color: '#6c5ce7', pale: '#eeeafd', label: 'Command' },
-  sourcing: { color: '#25bfa5', pale: '#e1f7f1', label: 'Sourcing' },
-  policy: { color: '#f5a524', pale: '#fff4dc', label: 'Policy' },
-  logistics: { color: '#4f7cff', pale: '#eaf0ff', label: 'Logistics' },
-  purchasing: { color: '#ef6a77', pale: '#fff0f1', label: 'Purchasing' },
-  reconciliation: { color: '#9c56c2', pale: '#f5eafb', label: 'Reconciliation' },
+  manager: { color: '#21786f', pale: '#e5f1ed', label: 'Command' },
+  sourcing: { color: '#3b9b7d', pale: '#e7f5ef', label: 'Sourcing' },
+  policy: { color: '#d98a3f', pale: '#fbefdf', label: 'Policy' },
+  logistics: { color: '#397d96', pale: '#e6f0f3', label: 'Logistics' },
+  purchasing: { color: '#d96855', pale: '#fae9e5', label: 'Purchasing' },
+  reconciliation: { color: '#738198', pale: '#ebeff3', label: 'Reconciliation' },
 };
 
 const statusCopy: Record<AgentState['status'], string> = {
@@ -53,12 +53,12 @@ function FloorSign({ text, position, width = 2.3 }: { text: string; position: V3
 
 function Warehouse() {
   return <group>
-    <Box position={[0, -.2, .35]} size={[15.8, .4, 11.8]} color="#2b2148" radius={.02}/>
-    <Box position={[0, .015, .35]} size={[15.25, .07, 11.25]} color="#e4e0ee" radius={.03}/>
-    {Array.from({ length: 15 }, (_, index) => <Box key={index} position={[-7 + index, .057, .35]} size={[.012, .014, 11.05]} color={index % 2 ? '#d4cfdf' : '#f2eff8'} radius={.001}/>) }
-    <Box position={[6.25, .075, -.05]} size={[2.1, .035, 10.25]} color="#7b728f" radius={.02}/>
-    <Line points={[[5.2, .1, -5], [5.2, .1, 5]]} color="#ffbe5b" lineWidth={2}/>
-    {Array.from({ length: 16 }, (_, index) => <Box key={index} position={[6.2, .1, -4.7 + index * .62]} size={[.55, .018, .09]} color={index % 2 ? '#ffb84d' : '#44385f'} radius={.002}/>) }
+    <Box position={[0, -.2, .35]} size={[15.8, .4, 11.8]} color="#173238" radius={.02}/>
+    <Box position={[0, .015, .35]} size={[15.25, .07, 11.25]} color="#e5e2d8" radius={.03}/>
+    {Array.from({ length: 15 }, (_, index) => <Box key={index} position={[-7 + index, .057, .35]} size={[.012, .014, 11.05]} color={index % 2 ? '#d5d4ca' : '#f5f2ea'} radius={.001}/>) }
+    <Box position={[6.25, .075, -.05]} size={[2.1, .035, 10.25]} color="#66777a" radius={.02}/>
+    <Line points={[[5.2, .1, -5], [5.2, .1, 5]]} color="#e9a765" lineWidth={2}/>
+    {Array.from({ length: 16 }, (_, index) => <Box key={index} position={[6.2, .1, -4.7 + index * .62]} size={[.55, .018, .09]} color={index % 2 ? '#e9a765' : '#26484e'} radius={.002}/>) }
     <Rack position={[-6.6, .08, -1.2]}/><Rack position={[6.65, .08, -2.2]} rotationY={Math.PI}/>
     <Crate position={[6.2, .1, 3.75]} scale={1.25}/><Crate position={[6.95, .1, 3.9]}/><Crate position={[-6.4, .1, 3.9]} scale={1.15}/>
     <FloorSign text="SHOPIFY INBOUND" position={[-5.9, .105, 4.85]}/><FloorSign text="SUPPLIER DOCKS" position={[6.15, .105, -4.7]}/><FloorSign text="AUTONOMOUS COMMERCE FLOOR" position={[-.25, .105, -5.05]} width={3.5}/>
@@ -114,7 +114,7 @@ function Station({ agent, selected, onSelect }: { agent: AgentState; selected: b
   const central = agent.id === 'manager'; const department = departments[agent.id]; const size = central ? 3.35 : 2.65; const active = ['working', 'retrying'].includes(agent.status);
   return <group position={positions[agent.id]}>
     <group onClick={(event) => { event.stopPropagation(); onSelect(); }} onPointerOver={() => { document.body.style.cursor = 'pointer'; }} onPointerOut={() => { document.body.style.cursor = 'auto'; }}>
-      <Box position={[0, .035, 0]} size={[size, .05, size]} color={selected ? '#6c5ce7' : '#887f9c'} radius={.1}/><Box position={[0, .066, 0]} size={[size - .1, .012, size - .1]} color={central ? '#d4ccf2' : '#e2ddec'} radius={.08}/>
+      <Box position={[0, .035, 0]} size={[size, .05, size]} color={selected ? '#21786f' : '#78898a'} radius={.1}/><Box position={[0, .066, 0]} size={[size - .1, .012, size - .1]} color={central ? '#c9ded7' : '#dde3dc'} radius={.08}/>
       <Line points={[[ -size/2 + .13, .078, size/2 - .13 ], [ size/2 - .13, .078, size/2 - .13 ], [ size/2 - .13, .078, -size/2 + .13 ], [ -size/2 + .13, .078, -size/2 + .13 ], [ -size/2 + .13, .078, size/2 - .13 ]]} color={selected ? department.color : '#fbfaff'} lineWidth={selected ? 2 : 1}/>
       <group position={[0, .065, .08]}><Desk color={department.color} central={central} active={active}/></group><Plant position={[-size / 2 + .35, .08, -size / 2 + .36]}/>
       <Box position={[size / 2 - .31, .29, -size / 2 + .38]} size={[.38, .42, .43]} color="#f0edf7"/>
@@ -132,8 +132,8 @@ function Station({ agent, selected, onSelect }: { agent: AgentState; selected: b
 function Vault({ snapshot }: { snapshot: OrderSnapshot }) {
   const state = snapshot.vault.locked ? `${snapshot.vault.locked} LOCKED` : snapshot.vault.paid ? `${snapshot.vault.paid} PAID` : `${snapshot.vault.available} READY`;
   return <group position={[6.3, .1, 1.8]}>
-    <Box position={[0, .72, 0]} size={[1.3, 1.45, 1.05]} color="#241b3f" radius={.09}/><Box position={[0, .75, .535]} size={[1.08, 1.15, .04]} color="#f0edfa" radius={.03}/>
-    <mesh position={[0, .76, .565]}><torusGeometry args={[.22, .035, 10, 24]}/><meshStandardMaterial color="#8f7ff2"/></mesh><Box position={[0, .43, .568]} size={[.45, .1, .018]} color="#ffb84d"/>
+    <Box position={[0, .72, 0]} size={[1.3, 1.45, 1.05]} color="#173238" radius={.09}/><Box position={[0, .75, .535]} size={[1.08, 1.15, .04]} color="#edf2ed" radius={.03}/>
+    <mesh position={[0, .76, .565]}><torusGeometry args={[.22, .035, 10, 24]}/><meshStandardMaterial color="#3d9588"/></mesh><Box position={[0, .43, .568]} size={[.45, .1, .018]} color="#e9a765"/>
     <Html center position={[0, 1.68, 0]}><div className="vault-label"><span>PAYMENT VAULT</span><strong>{state} DemoUSD</strong></div></Html>
   </group>;
 }
@@ -158,9 +158,9 @@ class SceneBoundary extends Component<{ children: ReactNode }, { failed: boolean
 export function Scene({ snapshot, selected, onSelect, reset, zoom }: { snapshot: OrderSnapshot; selected: AgentId; onSelect: (id: AgentId) => void; reset: number; zoom: number }) {
   const agents = useMemo(() => snapshot.agents, [snapshot.agents]);
   return <SceneBoundary><Canvas orthographic camera={{ position: [11, 15, 18], zoom: 55, near: .1, far: 100 }} shadows dpr={[1, 1.7]} gl={{ antialias: true }}>
-    <color attach="background" args={['#f1eef8']}/><ambientLight intensity={1.25}/>
+    <color attach="background" args={['#f2f0e9']}/><ambientLight intensity={1.25}/>
     <directionalLight position={[-5, 12, 7]} intensity={1.85} castShadow shadow-mapSize={[2048, 2048]} shadow-camera-left={-12} shadow-camera-right={12} shadow-camera-top={12} shadow-camera-bottom={-12} shadow-bias={-.001}/>
     <group position={[0, .15, 0]}><Warehouse/><Connections snapshot={snapshot}/>{agents.map((agent) => <Station key={agent.id} agent={agent} selected={selected === agent.id} onSelect={() => onSelect(agent.id)}/>)}<Vault snapshot={snapshot}/></group>
-    <ContactShadows position={[0, -.25, 0]} opacity={.24} scale={24} blur={2.6} far={9} resolution={512} color="#2d2346" frames={1}/><Camera selected={selected} reset={reset} zoom={zoom}/>
+    <ContactShadows position={[0, -.25, 0]} opacity={.24} scale={24} blur={2.6} far={9} resolution={512} color="#173238" frames={1}/><Camera selected={selected} reset={reset} zoom={zoom}/>
   </Canvas></SceneBoundary>;
 }

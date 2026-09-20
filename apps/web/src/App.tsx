@@ -36,6 +36,7 @@ export function App() {
   const [health, setHealth] = useState<Health | null>(null);
   const [mandate, setMandate] = useState<MandateStatus | null>(null);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const [followAgents, setFollowAgents] = useState(true);
   const [zoom, setZoom] = useState(1);
   const [reset, setReset] = useState(0);
   const refresh = async () => {
@@ -45,6 +46,13 @@ export function App() {
   };
   useEffect(() => { void refresh(); void fetch('/api/health').then((response) => response.json()).then(setHealth); const events = new EventSource('/api/events'); events.addEventListener('order', () => void refresh()); return () => events.close(); }, []);
   useEffect(() => { const onHash = () => setView(window.location.hash === '#presentation' ? 'presentation' : window.location.hash === '#system-design' ? 'system-design' : 'command'); window.addEventListener('hashchange', onHash); return () => window.removeEventListener('hashchange', onHash); }, []);
+  useEffect(() => {
+    if (!followAgents || !snapshot) return;
+    const next = snapshot.agents.find((agent) => ['retrying', 'blocked'].includes(agent.status))
+      ?? snapshot.agents.find((agent) => agent.status === 'working')
+      ?? snapshot.agents.find((agent) => agent.status === 'waiting');
+    if (next) setSelected(next.id);
+  }, [followAgents, snapshot?.updatedAt]);
   const openView = (next: View) => { window.location.hash = next === 'command' ? '' : next; setView(next); };
   const start = async () => { setStarting(true); const response = await fetch('/api/demo/start', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({scenario:'supplier_failover'}) }); if (response.ok) { await refresh(); setSelected('manager'); } setStarting(false); };
   const resume = async () => { if (!snapshot) return; setStarting(true); const response = await fetch(`/api/orders/${snapshot.id}/resume`, { method: 'POST' }); if (response.ok) await refresh(); setStarting(false); };
@@ -99,7 +107,7 @@ export function App() {
           {isBlocked ? <button className="outcome-action" onClick={resume} disabled={starting}><RotateCcw size={13}/>{starting ? 'Retrying…' : 'Resume safely'}</button> : <button className="outcome-action" onClick={() => setNotificationsOpen(true)}><Bell size={13}/>View proof trail</button>}
         </section>}
         <div className="scene-area">
-          <div className="scene-caption"><i/> AUTONOMOUS OPERATIONS MAP <span>Select any station to inspect its work</span></div>
+          <div className="scene-caption"><i/> AUTONOMOUS OPERATIONS MAP <span>{followAgents ? 'Following the active agent automatically' : 'Manual inspection mode'}</span><button className={followAgents ? 'active' : ''} onClick={() => setFollowAgents((value) => !value)}>{followAgents ? 'LIVE FOLLOW · ON' : 'FOLLOW AGENTS'}</button></div>
           {snapshot ? <Scene snapshot={snapshot} selected={selected} onSelect={setSelected} reset={reset} zoom={zoom}/> : <div className="empty"><div className="empty-orbit"><span>AO</span></div><h2>Agents standing by</h2><p>Start one order. The team will handle the simulated stock race and finish the purchase autonomously.</p><button className="primary" onClick={start}><Play size={15}/>Start autonomous order</button></div>}
           <div className="scene-legend"><span><i/>Working</span><span><i className="waiting"/>Monitoring</span><span><i className="complete"/>Complete</span></div>
           <div className="scene-controls"><button onClick={() => setZoom((value) => Math.max(.78, value - .1))} aria-label="Zoom out"><Minus size={14}/></button><span/><button onClick={() => { setZoom(1); setReset((value) => value + 1); }} aria-label="Reset view"><RotateCcw size={14}/></button><span/><button onClick={() => setZoom((value) => Math.min(1.35, value + .1))} aria-label="Zoom in"><Plus size={14}/></button></div>
