@@ -2,14 +2,14 @@
   <title id="title">AfterOrder</title>
   <defs>
     <linearGradient id="g" x1="8" y1="4" x2="56" y2="60" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#9A8CFF"/>
-      <stop offset="1" stop-color="#6C5CE7"/>
+      <stop stop-color="#60A5FA"/>
+      <stop offset="1" stop-color="#2563EB"/>
     </linearGradient>
   </defs>
-  <rect width="64" height="64" rx="18" fill="#241B3F"/>
+  <rect width="64" height="64" rx="18" fill="#0B1F33"/>
   <path d="M18 18.5 32 11l14 7.5v17L32 43 18 35.5v-17Z" fill="none" stroke="url(#g)" stroke-width="4" stroke-linejoin="round"/>
-  <path d="m18.5 19 13.5 7.5L45.5 19M32 27v15.5" fill="none" stroke="#8CE8D5" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
-  <path d="M16 50h25" stroke="#F9F7FF" stroke-width="3.5" stroke-linecap="round"/>
-  <path d="m38 45 7 5-7 5" fill="none" stroke="#FFB84D" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
-  <circle cx="16" cy="50" r="3.5" fill="#8CE8D5"/>
+  <path d="m18.5 19 13.5 7.5L45.5 19M32 27v15.5" fill="none" stroke="#5EEAD4" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M16 50h25" stroke="#F8FBFF" stroke-width="3.5" stroke-linecap="round"/>
+  <path d="m38 45 7 5-7 5" fill="none" stroke="#F26B5B" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="16" cy="50" r="3.5" fill="#5EEAD4"/>
 </svg>
