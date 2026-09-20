@@ -1,7 +1,7 @@
 import {
   addEvent, checkpointWorkflow, enqueueReconciliation, enqueueWorkflow, getDueReconciliations,
   getOrder, getRunnableWorkflowIds, getWorkflowJob, hasEvent, recordWorkflowFailure, setAgent,
-  setOrderStatus, updateOffer, updateReconciliation, upsertOffer
+  resumeWorkflow, setOrderStatus, updateOffer, updateReconciliation, upsertOffer
 } from './db.ts';
 import type { AgentId, Offer } from '../../../packages/shared/src/types.ts';
 import { dispatchOrder, getOffers, reserveOffer } from './integrations/suppliers.ts';
@@ -10,6 +10,7 @@ import { createShopifyFulfilment } from './integrations/shopify.ts';
 import { verifyIndexedRelease } from './integrations/envio.ts';
 import { attestDispatch } from './integrations/evidence.ts';
 import type { Hex } from 'viem';
+import { automaticRetryDelay, shouldRetryAutomatically } from './retryPolicy.ts';
 
 const listeners = new Set<(orderId: string) => void>();
 const running = new Set<string>();
@@ -179,9 +180,21 @@ async function processWorkflow(orderId: string) {
     }
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown workflow failure';
-    recordWorkflowFailure(orderId, message); setOrderStatus(orderId, 'blocked');
-    agent(orderId, 'manager', 'blocked', `${message} · retrying after restart or manual resume`);
-    event(orderId, 'WorkflowBlocked', message, 'system', { recoverable: true });
+    const job = getWorkflowJob(orderId);
+    if (job && shouldRetryAutomatically(job.step, job.attempts)) {
+      const delayMs = automaticRetryDelay(job.attempts);
+      recordWorkflowFailure(orderId, message);
+      agent(orderId, 'manager', 'retrying', `${message} · autonomous retry ${job.attempts + 1} of 2 scheduled`);
+      event(orderId, 'WorkflowRetryScheduled', `A safe pre-payment step failed; the controller will retry automatically`, 'system', { step: job.step, attempt: job.attempts + 1, delayMs });
+      const timer = setTimeout(() => {
+        if (resumeWorkflow(orderId)) void processWorkflow(orderId);
+      }, delayMs);
+      timer.unref?.();
+    } else {
+      recordWorkflowFailure(orderId, message); setOrderStatus(orderId, 'blocked');
+      agent(orderId, 'manager', 'blocked', `${message} · human review required before a financial retry`);
+      event(orderId, 'WorkflowBlocked', message, 'system', { recoverable: true, failClosed: true });
+    }
   } finally { running.delete(orderId); publish(orderId); }
 }
 

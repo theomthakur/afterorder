@@ -58,9 +58,9 @@ export function App() {
   const resume = async () => { if (!snapshot) return; setStarting(true); const response = await fetch(`/api/orders/${snapshot.id}/resume`, { method: 'POST' }); if (response.ok) await refresh(); setStarting(false); };
   const activeIndex = snapshot ? Math.max(0, stages.indexOf(snapshot.status)) : -1;
   const selectedAgent = useMemo(() => snapshot?.agents.find((agent) => agent.id === selected), [snapshot, selected]);
-  const alert = [...(snapshot?.events ?? [])].reverse().find((item) => ['StockReservationFailed', 'PlanRevised', 'WorkflowBlocked', 'PurchaseCompleted'].includes(item.type));
+  const alert = [...(snapshot?.events ?? [])].reverse().find((item) => ['StockReservationFailed', 'PlanRevised', 'WorkflowRetryScheduled', 'WorkflowBlocked', 'PurchaseCompleted'].includes(item.type));
   const completeAgents = snapshot?.agents.filter((agent) => agent.status === 'complete').length ?? 0;
-  const notifications = [...(snapshot?.events ?? [])].reverse().filter((item) => ['StockReservationFailed', 'PlanRevised', 'EscrowFunded', 'DispatchAttested', 'SupplierPaid', 'IndexerVerified', 'WorkflowBlocked', 'PurchaseCompleted'].includes(item.type)).slice(0, 7);
+  const notifications = [...(snapshot?.events ?? [])].reverse().filter((item) => ['StockReservationFailed', 'PlanRevised', 'WorkflowRetryScheduled', 'EscrowFunded', 'DispatchAttested', 'SupplierPaid', 'IndexerVerified', 'WorkflowBlocked', 'PurchaseCompleted'].includes(item.type)).slice(0, 7);
   const isComplete = snapshot?.status === 'purchase_complete';
   const isBlocked = snapshot?.status === 'blocked';
 
@@ -88,7 +88,7 @@ export function App() {
           <button className="primary" onClick={start} disabled={starting || Boolean(snapshot && snapshot.status !== 'purchase_complete')}><Play size={15}/>{starting ? 'Starting…' : snapshot ? 'Run new order' : 'Start demo order'}</button>
         </div>
         <section className="autonomy-strip" aria-label="Autonomous execution plan">
-          <div className="autonomy-intro"><span><Command size={13}/> AUTONOMOUS EXECUTION</span><strong>One order in. Six agents finish the work.</strong><small>Humans set the mandate; agents operate inside it.</small></div>
+          <div className="autonomy-intro"><span><Command size={13}/> ZERO-TOUCH EXECUTION</span><strong>One paid order activates the whole team.</strong><small>Safe failures self-heal. Financial uncertainty stops closed.</small></div>
           <div className="autonomy-lanes">{autonomousLanes.map((lane, index) => {
             const state = snapshot?.agents.find((agent) => agent.id === lane.id)?.status ?? 'idle';
             return <div className={`autonomy-lane ${state}`} key={lane.id}><span>{state === 'complete' ? <Check size={10}/> : index + 1}</span><div><small>{lane.action}</small><strong>{snapshot?.agents.find((agent) => agent.id === lane.id)?.name ?? readable(lane.id)}</strong></div>{index < autonomousLanes.length - 1 && <ChevronRight size={12}/>}</div>;
