@@ -49,8 +49,9 @@ fallback.
 
 https://afterorder-six.vercel.app plays back one recorded sandbox run of the supplier-failover
 journey, so the command center can be viewed without starting five services. It is labeled
-`RECORDED SANDBOX REPLAY`; nothing on that page calls an API or a chain. To refresh it, start the
-backend services, then run `corepack pnpm replay:record` and `corepack pnpm build:replay`.
+`RECORDED SANDBOX REPLAY`; nothing on that page calls an API or a chain. Its **Export proof** action
+downloads the matching recorded evidence artifact. To refresh both artifacts, start the backend
+services, then run `corepack pnpm replay:record` and `corepack pnpm build:replay`.
 
 ## Run the complete local demo
 

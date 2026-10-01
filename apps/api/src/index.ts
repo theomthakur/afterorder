@@ -12,6 +12,7 @@ import { privateKeyToAccount } from 'viem/accounts';
 import { z } from 'zod';
 import { verifyShopifyWebhook } from './integrations/shopifyWebhook.ts';
 import { resetDemoSuppliers } from './integrations/suppliers.ts';
+import { buildOrderProofReport } from './proofReport.ts';
 
 const app = Fastify({ logger: true });
 await app.register(cors, { origin: process.env.WEB_ORIGIN ?? 'http://localhost:5173', credentials: true });
@@ -24,6 +25,15 @@ app.get('/api/health', async () => ({ ok: true, mode: process.env.APP_MODE ?? 's
 app.get('/api/orders/latest', async () => getLatestOrder());
 app.get('/api/merchant/mandate/status', async () => ({ mode: chainIsLive() ? 'onchain' : 'sandbox', mandate: await getActiveMandateStatus() }));
 app.get<{ Params: { id: string } }>('/api/orders/:id', async (request, reply) => getOrder(request.params.id) ?? reply.code(404).send({ error: 'Order not found' }));
+app.get<{ Params: { id: string } }>('/api/orders/:id/proof.md', async (request, reply) => {
+  const order = getOrder(request.params.id);
+  if (!order) return reply.code(404).send({ error: 'Order not found' });
+  const filename = `afterorder-${order.displayOrder.replace(/[^a-zA-Z0-9_-]+/g, '').toLowerCase() || order.id}-proof.md`;
+  return reply
+    .header('Content-Type', 'text/markdown; charset=utf-8')
+    .header('Content-Disposition', `attachment; filename="${filename}"`)
+    .send(buildOrderProofReport(order, { explorerUrl: process.env.MONAD_EXPLORER_URL }));
+});
 app.post<{ Params: { id: string } }>('/api/orders/:id/resume', async (request, reply) => {
   if (!getOrder(request.params.id)) return reply.code(404).send({ error: 'Order not found' });
   if (!resumeWorkflow(request.params.id)) return reply.code(409).send({ error: 'Workflow is already running or complete' });

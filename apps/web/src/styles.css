@@ -149,6 +149,10 @@ h1 { font-family: "Sora", sans-serif; font-size: 27px; line-height: 1.25; letter
 .workflow-outcome > span { width: 35px; height: 35px; display: grid; place-items: center; border-radius: 10px; color: #14816e; background: #d9f4ed; }.workflow-outcome.blocked > span { color: #b94b58; background: #ffe5e8; }
 .workflow-outcome small, .workflow-outcome strong, .workflow-outcome p { display: block; }.workflow-outcome small { font-size: 6.5px; font-weight: 700; letter-spacing: 1.05px; }.workflow-outcome strong { margin: 2px 0; font: 600 10px "Sora"; }.workflow-outcome p { color: #52736d; font-size: 8px; line-height: 1.35; }.workflow-outcome.blocked p { color: #8e6870; }
 .outcome-action { padding: 7px 9px; display: flex; align-items: center; gap: 5px; border: 1px solid currentColor; border-radius: 8px; font-size: 8px; font-weight: 600; white-space: nowrap; }
+.outcome-actions { display: flex; align-items: center; gap: 6px; }
+.proof-download { color: inherit; text-decoration: none; }
+.scene-loading, .view-loading { min-height: 180px; display: grid; place-items: center; color: #6d747a; font-size: 10px; letter-spacing: .04em; }
+.view-loading { min-height: calc(100vh - 150px); }
 
 .context { min-height: 0; overflow: auto; padding: 26px 23px; background: #fdfcff; border-left: 1px solid #e3dff0; box-shadow: -8px 0 25px #241b3f07; }
 .context-eyebrow { display: flex; align-items: center; justify-content: space-between; color: #766f8a; font-size: 8px; letter-spacing: 1.5px; margin-bottom: 22px; }

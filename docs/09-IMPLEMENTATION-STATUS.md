@@ -1,6 +1,6 @@
 # Implementation status
 
-Verified locally on 16 September 2026. This page separates working code from integrations that
+Verified locally on 1 October 2026. This page separates working code from integrations that
 still require external accounts or deployment.
 
 The verified next implementation pass is recorded in
@@ -17,6 +17,9 @@ The verified next implementation pass is recorded in
 - Automatic replanning when the preferred supplier cannot reserve stock.
 - 3D operations room, visible journey, alerts, offers and live backend events.
 - In-product seven-slide presentation and system-design walkthrough, linked from the main rail.
+- Downloadable per-order proof reports generated from persisted workflow state, including agent
+  outcomes, the complete event trail, trust boundaries and explorer-linked settlement evidence
+  when an order ran on Monad testnet.
 - Solidity contracts for DemoUSD, merchant mandates and order escrow, including merchant-selected
   evidence authority and reusable budget restoration after an expired-order refund.
 - Independent evidence service that verifies supplier dispatch state before signing release.
@@ -51,7 +54,8 @@ still execute locally.
 ## Production work, not hackathon claims
 
 - Replace SQLite orchestration with Postgres and a durable job queue.
-- Add production identity roles, audit export, monitoring and key-management infrastructure.
+- Add production identity roles, monitoring and key-management infrastructure; the hackathon
+  proof export is an evidence artifact, not a production compliance archive.
 - Complete real merchant and supplier onboarding, legal review and operational support paths.
 - Run load, recovery and adversarial security testing in the deployed environment.
 - Validate the purchasing problem and workflow with merchants before claiming measured impact.
@@ -69,13 +73,17 @@ corepack pnpm smoke
 
 ## Latest verification result
 
-On 16 September 2026, the clean verification pass completed successfully:
+On 1 October 2026, the clean verification pass completed successfully:
 
 - TypeScript typecheck passed.
-- All **17 tests across 6 test files** passed, including five local-chain contract scenarios.
+- All **21 tests across 7 test files** passed, including five local-chain contract scenarios and
+  proof-report coverage for both sandbox and live-test evidence.
 - The production web build completed.
 - The running five-service sandbox completed an autonomous supplier failover with **15 persisted
   events**, ending with Harbor Works selected, paid, dispatched and reconciled.
+- The completed order exported a Markdown proof artifact through the API; its sandbox transaction
+  reference remained plain text and was explicitly marked as not onchain.
+- The static hosted replay build completed with the matching proof artifact bundled for download.
 - OpenRouter remained disabled, so the verification consumed no model credits.
 - The isolated Envio suite also passed **2 handler tests**, code generation and strict typecheck
   under Node 22.

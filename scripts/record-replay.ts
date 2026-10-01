@@ -19,4 +19,7 @@ while (Date.now() - begin < 30_000) {
 }
 const mandate = await (await fetch(`${base}/api/merchant/mandate/status`)).json() as { mandate: unknown };
 writeFileSync('apps/web/public/replay.json', JSON.stringify({ recordedAt: new Date().toISOString(), mode: 'sandbox', mandate: mandate.mandate ?? null, frames }));
-console.log(`Recorded ${frames.length} frames over ${frames.at(-1)?.at} ms`);
+const proofResponse = await fetch(`${base}/api/orders/${id}/proof.md`);
+if (!proofResponse.ok) throw new Error(`Proof export failed: ${proofResponse.status}`);
+writeFileSync('apps/web/public/proof.md', await proofResponse.text());
+console.log(`Recorded ${frames.length} frames over ${frames.at(-1)?.at} ms with its proof report`);
