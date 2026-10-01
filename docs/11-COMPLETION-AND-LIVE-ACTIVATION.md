@@ -1,6 +1,6 @@
 # AfterOrder completion and live activation
 
-Updated 16 September 2026.
+Updated 1 October 2026.
 
 ## Current completion line
 
@@ -21,6 +21,7 @@ fresh test-only role keys now exist only in the ignored local `.env`; no secret 
 | Reliability | Checkpoints, explicit resume and persisted Envio retry queue |
 | External boundaries | Signed Shopify webhook, authenticated supplier APIs and independent evidence service |
 | Interface | Live journey, six agent stations, notifications, offers, mandate state, presentation and system design |
+| Proof export | Per-order Markdown report generated from persisted events, with honest sandbox/live settlement labels |
 | Safety | Sandbox and live-test execution are separated per order; no silent fallback |
 
 ## External activation gate
@@ -56,6 +57,14 @@ Do not proceed with a live paid-order webhook if any of these is true:
 - the order would fall back to sandbox settlement;
 - the evidence signer cannot independently verify supplier dispatch.
 
+## Status on 1 October 2026
+
+- Doctor, typecheck and all 19 tests pass.
+- Hosted replay deployed: https://afterorder-six.vercel.app (recorded sandbox run, labeled as such).
+- All five role wallets hold 0 MON on chain 10143. Live deployment waits on faucet funding of the
+  merchant address (0.2 MON minimum).
+- Dynamic, Envio, Shopify and OpenRouter values are still empty in `.env`.
+
 ## Submission proof pack
 
 Before 13 October, collect:
@@ -66,5 +75,6 @@ Before 13 October, collect:
 - Dynamic mandate-creation recording;
 - Envio query and UI reconciliation evidence;
 - one redacted agent/tool trace showing failure recovery;
+- one downloaded order-proof report showing the selected supplier, agent states and settlement evidence;
 - exact explanation of what is sandboxed and what is live;
 - two-minute demo video and final social post.

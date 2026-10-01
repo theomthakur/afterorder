@@ -18,7 +18,9 @@
     "contracts:compile": "tsx contracts/scripts/compile.ts",
     "contracts:deploy": "tsx contracts/scripts/deploy.ts",
     "wallets:bootstrap": "tsx scripts/bootstrap-test-wallets.ts",
-    "doctor": "tsx scripts/doctor.ts"
+    "doctor": "tsx scripts/doctor.ts",
+    "replay:record": "tsx scripts/record-replay.ts",
+    "build:replay": "VITE_REPLAY=true vite build --config apps/web/vite.config.ts"
   },
   "dependencies": {
     "@dynamic-labs/ethereum": "5.8.0",

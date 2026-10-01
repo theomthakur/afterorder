@@ -35,12 +35,22 @@ Works without changing the merchant's 40 DemoUSD limit.
 - Optional OpenRouter purchasing planner for initial selection and failure recovery. It can only
   choose from policy-approved offers and is disabled by default to prevent accidental spend.
 - A responsive React/Three.js command center driven by persisted backend events over SSE.
+- A downloadable order-proof report that turns the persisted agent and payment trail into a
+  judge-readable Markdown artifact, with explicit sandbox/live labels and explorer links for live
+  Monad transactions.
 
 No secret is included in the repository. A hash shown in sandbox mode is not presented as an
 onchain transaction. Execution mode belongs to each order: adding credentials cannot make a
 sandbox demo spend testnet assets, and a real Shopify order is rejected before intake unless
 Monad settlement and Shopify fulfilment are both configured. There is no silent live-to-sandbox
 fallback.
+
+## Hosted replay
+
+https://afterorder-six.vercel.app plays back one recorded sandbox run of the supplier-failover
+journey, so the command center can be viewed without starting five services. It is labeled
+`RECORDED SANDBOX REPLAY`; nothing on that page calls an API or a chain. To refresh it, start the
+backend services, then run `corepack pnpm replay:record` and `corepack pnpm build:replay`.
 
 ## Run the complete local demo
 
@@ -66,6 +76,11 @@ The same full flow can be checked from the terminal while those processes are ru
 ```bash
 corepack pnpm smoke
 ```
+
+After a run completes, use **Export proof** in the outcome panel or request
+`/api/orders/<order-id>/proof.md`. The report records the selected supplier, agent states,
+decision trail, trust boundaries and settlement evidence without presenting sandbox hashes as
+onchain transactions.
 
 ## Verify before a demo
 
