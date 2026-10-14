@@ -528,3 +528,4 @@ body:has(.landing) { overflow: auto; }
 @media (max-width: 760px) { .board-columns { grid-template-columns: 1fr; } }
 .board-more { padding: 4px 6px; color: #6b6585; font-size: 10.5px; text-align: center; }
 .brand-home { padding: 0; background: none; color: inherit; text-align: left; cursor: pointer; } .brand-home:hover { opacity: .85; }
+.outcome-hint { display: block; margin-top: 3px; color: #6e54ff; font-size: 10.5px; font-style: normal; font-weight: 600; } .run-again { color: #fff !important; background: linear-gradient(135deg, #9a88ff, #6e54ff) !important; border-color: transparent !important; }

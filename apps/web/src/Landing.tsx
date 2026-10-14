@@ -22,7 +22,7 @@ export function Landing({ onEnter }: { onEnter: () => void }) {
         <li><span>2</span><div><b>Click “Run sandbox order”</b><p>Top of the right panel, under AI decisions. Watch Northstar fail and the manager reroute to Harbor Works inside the mandate.</p></div></li>
         <li><span>3</span><div><b>Click “Proof PDF”</b><p>When the run completes, download the proof report: decision, payment steps and the full dated trail.</p></div></li>
       </ol>
-      <div className="landing-actions"><button className="landing-cta" onClick={onEnter}>Start the demo <ArrowRight size={16}/></button><small>Live mode: a paid Shopify order starts the same run on Monad testnet.</small></div>
+      <div className="landing-actions"><button className="landing-cta" onClick={onEnter}>Start the demo <ArrowRight size={16}/></button><small>Want to watch it again? Click “Run again” when a run finishes. Live mode: a paid Shopify order starts the same run on Monad testnet.</small></div>
     </section>
     <section className="landing-partners"><p>LIVE INTEGRATIONS</p><PartnerStrip withRoles/></section>
     <footer className="landing-foot">Running on Monad testnet · open source (MIT) · github.com/theomthakur/afterorder</footer>
