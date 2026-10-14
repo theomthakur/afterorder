@@ -8,7 +8,7 @@ const SLIDES: Slide[] = [
   {
     label: 'Opening', eyebrow: 'MONAD METROPOLIS · AUTONOMOUS COMMERCE',
     title: <>The order is paid.<br/><span>AfterOrder handles what comes next.</span></>,
-    body: <><p className="pitch-lede">Six agents source inventory, enforce merchant limits, secure supplier payment, coordinate dispatch and reconcile Shopify—while the merchant watches one live journey.</p><div className="pitch-metrics"><div><b>6</b><span>bounded agents</span></div><div><b>2</b><span>independent suppliers</span></div><div><b>1</b><span>merchant mandate</span></div></div></>
+    body: <><p className="pitch-lede">Six agents source inventory, enforce merchant limits, secure supplier payment, coordinate dispatch and reconcile Shopify, while the merchant watches one live journey.</p><div className="pitch-metrics"><div><b>6</b><span>bounded agents</span></div><div><b>2</b><span>independent suppliers</span></div><div><b>1</b><span>merchant mandate</span></div></div></>
   },
   {
     label: 'Problem', eyebrow: '01 · THE OPERATIONAL GAP',

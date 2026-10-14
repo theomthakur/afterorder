@@ -25,6 +25,6 @@ export function Landing({ onEnter }: { onEnter: () => void }) {
       <div className="landing-actions"><button className="landing-cta" onClick={onEnter}>Start the demo <ArrowRight size={16}/></button><small>Want to watch it again? Click “Run again” when a run finishes. Live mode: a paid Shopify order starts the same run on Monad testnet.</small></div>
     </section>
     <section className="landing-partners"><p>LIVE INTEGRATIONS</p><PartnerStrip withRoles/></section>
-    <footer className="landing-foot">Running on Monad testnet · open source (MIT) · github.com/theomthakur/afterorder</footer>
+    <footer className="landing-foot">Running on Monad testnet · open source (MIT) · <a href="https://github.com/theomthakur/afterorder" target="_blank" rel="noreferrer">github.com/theomthakur/afterorder</a></footer>
   </main>;
 }

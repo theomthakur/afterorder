@@ -1,10 +1,10 @@
 import type { OrderSnapshot } from '../../../packages/shared/src/types.ts';
 
-const clean = (value: unknown) => String(value ?? '—').replaceAll('|', '\\|').replace(/[\r\n]+/g, ' ');
+const clean = (value: unknown) => String(value ?? '-').replaceAll('|', '\\|').replace(/[\r\n]+/g, ' ');
 
 function metadataSummary(metadata: Record<string, unknown>) {
   const entries = Object.entries(metadata).filter(([, value]) => value !== undefined && value !== null && value !== '');
-  return entries.length ? entries.map(([key, value]) => `${key}=${typeof value === 'object' ? JSON.stringify(value) : String(value)}`).join('; ') : '—';
+  return entries.length ? entries.map(([key, value]) => `${key}=${typeof value === 'object' ? JSON.stringify(value) : String(value)}`).join('; ') : '-';
 }
 
 export function buildOrderProofReport(order: OrderSnapshot, options: { generatedAt?: string; explorerUrl?: string } = {}) {
@@ -17,10 +17,10 @@ export function buildOrderProofReport(order: OrderSnapshot, options: { generated
     ? `[${order.chainTxHash}](${transactionUrl})`
     : order.chainTxHash
       ? `${clean(order.chainTxHash)} (sandbox reference; not an onchain transaction)`
-      : '—';
+      : '-';
   const offers = order.offers.length
     ? order.offers.map((offer) => `| ${clean(offer.supplierName)} | ${offer.total} ${offer.currency} | ${offer.deliveryDays} days | ${clean(offer.status)} | ${offer.inStock ? 'yes' : 'no'} |`).join('\n')
-    : '| — | — | — | — | — |';
+    : '| - | - | - | - | - |';
   const agents = order.agents.map((agent) => `| ${clean(agent.name)} | ${clean(agent.status)} | ${clean(agent.summary)} |`).join('\n');
   const events = order.events.map((event, index) => `| ${index + 1} | ${clean(event.createdAt)} | ${clean(event.actor)} | ${clean(event.type)} | ${clean(event.message)} | ${clean(metadataSummary(event.metadata))} |`).join('\n');
 
@@ -73,7 +73,7 @@ ${agents}
 
 | # | Time | Actor | Event | Result | Metadata |
 |---:|---|---|---|---|---|
-${events || '| — | — | — | — | — | — |'}
+${events || '| - | - | - | - | - | - |'}
 
 ## Verification note
 

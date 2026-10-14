@@ -529,3 +529,4 @@ body:has(.landing) { overflow: auto; }
 .board-more { padding: 4px 6px; color: #6b6585; font-size: 10.5px; text-align: center; }
 .brand-home { padding: 0; background: none; color: inherit; text-align: left; cursor: pointer; } .brand-home:hover { opacity: .85; }
 .outcome-hint { display: block; margin-top: 2px; color: #6b6585; font-size: 10px; font-style: normal; font-weight: 400; }
+.landing-foot a { color: #6e54ff; font-weight: 600; text-decoration: underline; text-underline-offset: 2px; }
