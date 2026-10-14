@@ -11,68 +11,28 @@ const decisions = [
 ];
 
 type Partner = 'Monad' | 'Shopify' | 'Dynamic' | 'MetaMask' | 'OpenRouter' | 'Gemini' | 'Envio';
-type Card = { title: string; logo?: Partner; items: string[] };
-const LAYERS: Array<{ index: string; name: string; note: string; cards: Card[] }> = [
-  { index: 'L1', name: 'Entry points', note: 'who starts work', cards: [
-    { title: 'Shopify store', logo: 'Shopify', items: ['orders/paid webhook, HMAC-SHA256 signed', 'one line item, SKU AO-DESK-01', 'Admin API: fulfilment + tracking'] },
-    { title: 'Merchant wallet', logo: 'Dynamic', items: ['Dynamic login, MetaMask on Monad testnet', 'signs mint, approve, deposit, grantRoot', 'API verifies owner before activation'] },
-    { title: 'Operator console', items: ['intro page, command center, slides', 'live state over Server-Sent Events', 'Run sandbox order, Proof PDF'] },
-  ] },
-  { index: 'L2', name: 'AfterOrder API', note: 'Fastify · validation boundary', cards: [
-    { title: 'Intake', items: ['POST /webhooks/shopify/orders-paid', 'signature check on raw body', 'webhook ID claimed once (idempotent)'] },
-    { title: 'Merchant authority', items: ['GET /api/merchant/mandate/config', 'POST /api/merchant/mandate/confirm', 'GET /api/merchant/mandate/status'] },
-    { title: 'Orders + evidence', items: ['GET /api/orders/:id, /latest', 'POST /api/orders/:id/resume', 'GET /api/orders/:id/proof.md · /api/events'] },
-  ] },
-  { index: 'L3', name: 'Orchestration', note: 'restart-safe workflow', cards: [
-    { title: 'Workflow engine', items: ['steps: validate, source, reserve, fund, accept, dispatch, release, shopify', 'checkpoint after every step', 'safe retries; money steps stop for review'] },
-    { title: 'Agent team', items: ['Manager: plans and recovers', 'Sourcing, Policy, Purchasing', 'Logistics, Reconciliation'] },
-    { title: 'Planner', logo: 'OpenRouter', items: ['OpenRouter → Gemini 2.5 Flash Lite', 'chooses only among policy-approved offers', 'invalid answer → deterministic rule'] },
-  ] },
-  { index: 'L4', name: 'Independent services', note: 'separate keys and state', cards: [
-    { title: 'Supplier A · Northstar', items: ['POST /quotes, /reservations', '32 DemoUSD, last unit (fails on purpose)', 'own SQLite inventory'] },
-    { title: 'Supplier B · Harbor Works', items: ['POST /quotes, /reservations', '35 DemoUSD, 10 units', 'own SQLite inventory'] },
-    { title: 'Evidence signer', items: ['POST /attestations/dispatch', 're-checks supplier dispatch state', 'signs digest the escrow verifies'] },
-  ] },
-  { index: 'L5', name: 'Monad testnet', note: 'authority + settlement', cards: [
-    { title: 'MandateRegistry', logo: 'Monad', items: ['grantRoot, delegate, revoke', 'previewSpend, consume, restore', 'per-order cap · total budget · supplier root'] },
-    { title: 'OrderEscrow', logo: 'Monad', items: ['deposit, fundOrder', 'acceptOrder, releaseOnDispatch', 'refundExpired restores budget once'] },
-    { title: 'DemoUSD', logo: 'Monad', items: ['mint, approve, transfer', 'valueless test token', 'chain 10143'] },
-  ] },
-  { index: 'L6', name: 'State + indexing', note: 'what is remembered', cards: [
-    { title: 'SQLite event record', items: ['orders, agents, offers, events', 'workflow_jobs, reconciliation_jobs', 'operations, merchant_authorizations'] },
-    { title: 'Envio HyperIndex', logo: 'Envio', items: ['OrderFunded, Accepted, Released, Refunded', 'independent check of each release', 'queued reconciliation with retries'] },
-    { title: 'Outputs', items: ['Shopify order marked Fulfilled', 'proof report (PDF / Markdown)', 'monadvision transaction links'] },
-  ] },
-];
-const SEQUENCE: Array<[string, string]> = [
-  ['Merchant', 'Connects MetaMask through Dynamic and signs the mandate on Monad'],
-  ['Shopify', 'Customer order is paid; Shopify sends the signed orders/paid webhook'],
-  ['API', 'Verifies the signature, claims the webhook ID once, creates the order'],
-  ['Sourcing', 'Requests quotes from Northstar and Harbor Works'],
-  ['Policy', 'Drops any offer outside the mandate: supplier, price, delivery'],
-  ['Manager', 'Gemini picks Northstar, the cheapest approved offer'],
-  ['Sourcing', 'Northstar cannot reserve its last unit; the failure is recorded'],
-  ['Manager', 'Replans: Harbor Works, still inside the same mandate'],
-  ['Purchasing', 'fundOrder locks 35 DemoUSD in OrderEscrow on Monad'],
-  ['Supplier', 'Harbor Works verifies the escrow and calls acceptOrder'],
-  ['Logistics', 'Supplier dispatches; the evidence signer verifies and signs'],
-  ['Escrow', 'releaseOnDispatch pays Harbor Works against the signed evidence'],
-  ['Reconciliation', 'Shopify order marked Fulfilled with tracking; Envio check queued'],
-  ['Operator', 'Downloads the proof report with every step and transaction link'],
+const FLOW: Array<[string, string, Partner?]> = [
+  ['Order paid', 'signed orders/paid webhook', 'Shopify'],
+  ['Verify + record', 'signature check, no duplicates'],
+  ['AI picks supplier', 'Gemini via OpenRouter, approved offers only', 'OpenRouter'],
+  ['Reserve stock', 'cheapest fails, manager reroutes'],
+  ['Lock payment', 'OrderEscrow.fundOrder', 'Monad'],
+  ['Supplier ships', 'evidence signer verifies dispatch'],
+  ['Release payment', 'OrderEscrow.releaseOnDispatch', 'Monad'],
+  ['Mark fulfilled', 'tracking sent back + proof PDF', 'Shopify'],
 ];
 
 export function SystemDesign() {
   return <div className="design-page">
     <header className="design-heading"><p>SYSTEM DESIGN</p><h1>Authority, execution and evidence stay separate</h1><span>AfterOrder gives agents room to recover while keeping money movement and external claims inside validated boundaries.</span></header>
-    <section className="layered-arch" aria-label="AfterOrder detailed architecture">
-      {LAYERS.map((layer) => <div className="layer" key={layer.name}>
-        <div className="layer-name"><span>{layer.index}</span><b>{layer.name}</b><small>{layer.note}</small></div>
-        <div className="layer-cards">{layer.cards.map((card) => <article key={card.title}><h4>{card.logo && <PartnerLogo name={card.logo}/>}{card.title}</h4><ul>{card.items.map((item) => <li key={item}>{item}</li>)}</ul></article>)}</div>
-      </div>)}
-    </section>
-
-    <section className="design-section"><div className="design-section-title"><p>ONE LIVE ORDER, END TO END</p><h2>Fourteen steps from Shopify payment to Shopify fulfilment</h2></div>
-      <ol className="sequence">{SEQUENCE.map(([actor, step], index) => <li key={step}><span>{index + 1}</span><b>{actor}</b><p>{step}</p></li>)}</ol>
+    <section className="flow-board" aria-label="AfterOrder flow">
+      <div className="flow-lane authority"><span className="lane-tag">BEFORE ANY ORDER</span>
+        <div className="flow-node"><b><PartnerLogo name="Dynamic"/> Merchant connects wallet</b><small>MetaMask through Dynamic</small></div><i>→</i>
+        <div className="flow-node chain"><b><PartnerLogo name="Monad"/> Mandate on Monad</b><small>per-order cap · total budget · approved suppliers</small></div>
+      </div>
+      <div className="flow-lane"><span className="lane-tag">EVERY PAID ORDER</span>
+        {FLOW.map(([title, detail, logo], index) => <div className="flow-step" key={title}><div className={`flow-node ${logo === 'Monad' ? 'chain' : ''}`}><span>{index + 1}</span><b>{logo && <PartnerLogo name={logo}/>}{title}</b><small>{detail}</small></div>{index < FLOW.length - 1 && <i>→</i>}</div>)}
+      </div>
     </section>
 
     <section className="design-section"><div className="design-section-title"><p>LIVE INTEGRATIONS</p><h2>Every external system is a real account, not a mock</h2></div><PartnerStrip withRoles/></section>

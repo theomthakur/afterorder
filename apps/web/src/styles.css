@@ -494,3 +494,17 @@ body:has(.landing) { overflow: auto; }
 .inbox-empty { color: #8a84a3; font-size: 11.5px; padding: 6px 2px; }
 .crumb-link { padding: 0; color: #6e54ff; font: inherit; letter-spacing: inherit; font-weight: 700; } .crumb-link:hover { text-decoration: underline; }
 .rail-github img { opacity: .85; } .rail-github:hover img { opacity: 1; }
+
+/* Simple numbered flow (replaces the layered detail) */
+.flow-board { display: grid; gap: 14px; margin: 18px 0 30px; }
+.flow-lane { position: relative; display: flex; flex-wrap: wrap; align-items: stretch; gap: 8px; padding: 26px 16px 16px; border: 1px solid #e4defb; border-radius: 18px; background: #fff; }
+.flow-lane.authority { background: #f6f3ff; }
+.lane-tag { position: absolute; top: 9px; left: 16px; color: #6e54ff; font-size: 8.5px; font-weight: 700; letter-spacing: 1.3px; }
+.flow-step { display: flex; align-items: center; gap: 8px; }
+.flow-lane > i, .flow-step > i { align-self: center; color: #836ef9; font-style: normal; font-weight: 700; }
+.flow-node { position: relative; width: 158px; min-height: 74px; display: grid; align-content: start; gap: 4px; padding: 10px 11px; border: 1px solid #e4defb; border-radius: 13px; background: #fff; }
+.flow-node.chain { border-color: #cfc4ff; background: #f1edff; }
+.flow-node > span { width: 20px; height: 20px; display: grid; place-items: center; border-radius: 7px; background: #836ef9; color: #fff; font-size: 10px; font-weight: 700; }
+.flow-node b { display: flex; align-items: center; gap: 6px; color: #2b1f5c; font-size: 11.5px; }
+.flow-node small { color: #6b6585; font-size: 10px; line-height: 1.4; }
+.flow-lane.authority .flow-node { width: 240px; }
