@@ -25,3 +25,7 @@ the local Docker runtime.
 
 No Shopify customer data is indexed. Only contract event identifiers, supplier
 wallets, token amounts, transaction hashes and block metadata are stored.
+
+## Hosted deployment
+
+The Envio hosted service builds this folder from `main` using `config.monad-testnet.yaml`, which points at the live OrderEscrow on Monad testnet (`0xf7b5e46bcb15282325f5b45d9cc819b08f66ef2b`, from block 70832900).
