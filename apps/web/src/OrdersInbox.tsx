@@ -22,12 +22,13 @@ export function OrdersInbox({ orders, onOpen, onRun, running }: { orders: OrderS
         return <section key={column.key} className={`board-column ${column.key}`}>
           <div className="board-column-head"><column.icon size={15}/><div><h2>{column.title}</h2><small>{column.note}</small></div><b>{list.length}</b></div>
           <div className="board-cards">
-            {list.length ? list.map((order) => <button key={order.id} className="board-card" onClick={() => onOpen(order.id)}>
+            {list.length ? list.slice(0, 6).map((order) => <button key={order.id} className="board-card" onClick={() => onOpen(order.id)}>
               <div className="board-card-top"><b>{order.displayOrder}</b><span className={`board-mode ${order.mode}`}>{order.mode === 'live_test' ? 'Live' : 'Sandbox'}</span></div>
               <p>{order.product}</p>
               <small>{order.lastEvent ?? readable(order.status)}</small>
               <div className="board-card-foot"><span>{order.selectedSupplier ?? 'Sourcing…'}</span><span>{new Date(order.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span></div>
             </button>) : <p className="board-empty">{column.empty}</p>}
+            {list.length > 6 && <p className="board-more">+ {list.length - 6} more {column.title.toLowerCase()}</p>}
           </div>
         </section>;
       })}
