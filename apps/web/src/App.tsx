@@ -3,6 +3,7 @@ import { Activity, Bell, MessageSquare, Send, Check, ChevronRight, Command, Down
 import type { AgentId, OrderSnapshot } from '../../../packages/shared/src/types.ts';
 import { Landing } from './Landing.tsx';
 import { PartnerLogo } from './Partners.tsx';
+import { exportProofPdf } from './proofPdf.ts';
 const Scene = lazy(() => import('./Scene.tsx').then((module) => ({ default: module.Scene })));
 const Presentation = lazy(() => import('./Presentation.tsx').then((module) => ({ default: module.Presentation })));
 const SystemDesign = lazy(() => import('./SystemDesign.tsx').then((module) => ({ default: module.SystemDesign })));
@@ -137,7 +138,7 @@ export function App() {
         {(isComplete || isBlocked) && <section className={`workflow-outcome ${isBlocked ? 'blocked' : 'complete'}`}>
           <span>{isComplete ? <FileCheck2 size={19}/> : <ShieldCheck size={19}/>}</span>
           <div><small>{isComplete ? 'AUTONOMOUS RUN COMPLETE' : 'PAUSED SAFELY'}</small><strong>{isComplete ? 'Purchased, dispatched, paid and reconciled.' : 'The agents stopped before an unsafe action.'}</strong><p>{isComplete ? `No approval was required after the order arrived. ${snapshot?.selectedSupplier ?? 'The supplier'} was paid only after signed dispatch evidence.` : alert?.message ?? 'Review the failure before resuming from the durable checkpoint.'}</p></div>
-          {isBlocked ? <button className="outcome-action" onClick={resume} disabled={starting}><RotateCcw size={13}/>{starting ? 'Retrying…' : 'Resume safely'}</button> : <div className="outcome-actions"><button className="outcome-action" onClick={() => setNotificationsOpen(true)}><Bell size={13}/>View trail</button><a className="outcome-action proof-download" href={REPLAY ? '/proof.md' : `/api/orders/${snapshot?.id}/proof.md`} download><Download size={13}/>Export proof</a></div>}
+          {isBlocked ? <button className="outcome-action" onClick={resume} disabled={starting}><RotateCcw size={13}/>{starting ? 'Retrying…' : 'Resume safely'}</button> : <div className="outcome-actions"><button className="outcome-action" onClick={() => setNotificationsOpen(true)}><Bell size={13}/>View trail</button><button className="outcome-action proof-download" onClick={() => void exportProofPdf(REPLAY ? '/proof.md' : `/api/orders/${snapshot?.id}/proof.md`)}><Download size={13}/>Proof PDF</button><a className="outcome-action" href={REPLAY ? '/proof.md' : `/api/orders/${snapshot?.id}/proof.md`} download><FileCheck2 size={13}/>Markdown</a></div>}
         </section>}
         <div className="scene-area">
           <div className="scene-caption"><i/> AUTONOMOUS OPERATIONS MAP <span>{followAgents ? 'Following the active agent automatically' : 'Manual inspection mode'}</span><button className={followAgents ? 'active' : ''} onClick={() => setFollowAgents((value) => !value)}>{followAgents ? 'LIVE FOLLOW · ON' : 'FOLLOW AGENTS'}</button></div>

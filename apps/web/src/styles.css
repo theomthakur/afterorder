@@ -322,3 +322,41 @@ body:has(.landing) { overflow: auto; }
 .landing-pillars svg { color: #e85628; }.landing-pillars h3 { margin: 10px 0 6px; font: 700 16px "Sora", sans-serif; }.landing-pillars p { color: #5d646a; font-size: 12px; line-height: 1.55; }
 .landing-partners { display: grid; gap: 12px; }
 .landing-foot { margin-top: 30px; color: #8a9095; font-size: 11px; }
+
+/* Monad palette (13 Oct): Monad purple replaces signal orange as the accent on light surfaces. */
+:root { --violet: #836ef9; }
+.boot { color: #836ef9; }
+.brand strong span, .landing-hero h1 span { color: #836ef9; }
+.primary, .landing-cta { background: linear-gradient(135deg, #9a88ff, #6e54ff); box-shadow: 0 8px 22px #6e54ff38; }
+.primary:hover:not(:disabled) { box-shadow: 0 10px 26px #6e54ff48; }
+.avatar, .rail-button.active { background: linear-gradient(135deg, #9a88ff, #6e54ff); border-color: #ddd5ff; color: #fff; }
+.rail-button > i, .notification-button > i { background: #836ef9; }
+.landing { background: radial-gradient(circle at 78% -5%, #e9e3ff 0, #f7f5ff 42%, #f4f2fb 100%); }
+.landing-eyebrow, .landing-partners > p, .landing-pillars svg, .autonomy-intro > span, .text-btn, .order-icon, .agent-portrait, .composer-row { color: #6e54ff; }
+.workspace { background: radial-gradient(circle at 50% 22%, #ffffff 0, #f7f5ff 52%, #efecfa 100%); }
+.explain-workspace { background: radial-gradient(circle at 70% 0%, #ffffff 0, #f5f2ff 55%, #ece8fa 100%); }
+.pitch-eyebrow, .design-heading > p, .design-section-title > p, .design-split article p { color: #6e54ff; }
+.order-badge, .pill, .section-title > span { color: #4b36c9; border-color: #ddd5ff; background: #f1edff; }
+.order-icon, .agent-portrait { background: #f1edff; border-color: #ddd5ff; }
+.autonomy-strip { background: linear-gradient(100deg, #ffffff, #f1edff); border-color: #e4defb; }
+.autonomy-lane.working > span, .autonomy-lane.retrying > span, .journey-step.current > span { border-color: #836ef9; background: #836ef9; box-shadow: 0 0 0 3px #836ef926; }
+.feed article > i, .scene-caption > i { background: #836ef9; }
+.scene-caption button.active { color: #4b36c9; border-color: #cfc4ff; background: #f1edff; }
+.vault-label strong { color: #6e54ff; }
+.topbar, .rail, .context, .journey, .landing-pillars article { border-color: #e7e2f7; }
+.chat-user { background: #2b1f5c; }
+.chat-agent { background: #f1edff; border-color: #ddd5ff; }.chat-agent b { color: #6e54ff; }
+.mini-architecture > div.core, .arch-core { background: #f1edff; border-color: #ddd5ff; }
+.partner-chip, .composer-row { border-color: #e4defb; }
+
+/* Layout polish (13 Oct): quieter 3D labels, compact chat composer. */
+.station-label { width: 112px; padding: 5px 7px 5px 9px; background: #ffffffd9; box-shadow: 0 4px 12px #2b1f5c12; }
+.station-label.central { width: 124px; }
+.station-label * { font-size: 92% !important; }
+.station-label h3, .station-label strong { font-size: 11px !important; }
+.station-label p, .station-label small, .station-label span { font-size: 7px !important; }
+.workspace-heading { align-items: flex-start; }
+.agent-composer { width: min(400px, 46%); flex-shrink: 0; }
+.chat-thread { max-height: 86px; overflow: auto; padding-right: 2px; }
+.chat-user, .chat-agent { font-size: 9.5px; padding: 6px 9px; }
+.composer-hint { font-size: 7.5px; }
