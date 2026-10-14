@@ -14,7 +14,6 @@ const stages = ['received','validating','sourcing','reserving','funding','awaiti
 const labels = ['Order','Validate','Offers','Reserve','Escrow','Supplier','Pack','Dispatch','Reconcile','Complete'];
 type View = 'orders' | 'command' | 'presentation' | 'system-design';
 const nav: Array<{ view: View; label: string; icon: typeof Activity }> = [
-  { view: 'orders', label: 'Orders', icon: Inbox },
   { view: 'command', label: 'Command center', icon: Activity },
   { view: 'presentation', label: 'Presentation', icon: PresentationIcon },
   { view: 'system-design', label: 'System design', icon: Workflow }
@@ -98,7 +97,7 @@ export function App() {
   const openOrder = (id: string) => { if (REPLAY) { if (recordedFinal) setSnapshot(recordedFinal); window.location.hash = ''; setView('command'); return; } openOrderId.current = id; setSelected('manager'); void refresh(); window.location.hash = ''; setView('command'); };
   const runFromInbox = async () => { await start(); window.location.hash = ''; setView('command'); };
   const goIntro = () => { try { sessionStorage.removeItem('ao-entered'); } catch { /* storage unavailable */ } window.location.hash = ''; setEntered(false); };
-  const enter = () => { try { sessionStorage.setItem('ao-entered', '1'); } catch { /* storage unavailable */ } setEntered(true); window.location.hash = 'orders'; setView('orders'); };
+  const enter = () => { try { sessionStorage.setItem('ao-entered', '1'); } catch { /* storage unavailable */ } setEntered(true); window.location.hash = ''; setView('command'); };
   if (!entered) return <Landing onEnter={enter}/>;
   const aiDecisions = (snapshot?.events ?? []).filter((item) => ['OfferSelected', 'PlanRevised'].includes(item.type)).map((item) => ({ id: item.id, type: item.type, message: item.message, mode: String((item.metadata as Record<string, unknown> | undefined)?.decisionMode ?? ''), rationale: String((item.metadata as Record<string, unknown> | undefined)?.rationale ?? item.message) }));
   return <main className="app-shell">
@@ -122,7 +121,7 @@ export function App() {
       </aside>
       {view === 'command' ? <><section className="workspace">
         <div className="workspace-heading">
-          <div><p className="breadcrumb"><button className="crumb-link" onClick={() => openView('orders')}>ORDERS</button> <span>/</span> {snapshot?.displayOrder ?? 'LIVE COMMAND FLOOR'}</p><div className="title-line"><h1>{snapshot ? `${snapshot.displayOrder} · ${snapshot.product}` : 'Commerce control tower'}</h1><span className="order-badge"><i/>{snapshot ? readable(snapshot.status) : 'ready'}</span></div><p>{snapshot ? `One ${snapshot.sku} · $${snapshot.retailTotal} Shopify test order` : 'Your agents are ready for the next paid order.'}</p></div>
+          <div><p className="breadcrumb">OPERATIONS <span>/</span> {snapshot?.displayOrder ?? 'LIVE COMMAND FLOOR'}</p><div className="title-line"><h1>{snapshot ? `${snapshot.displayOrder} · ${snapshot.product}` : 'Commerce control tower'}</h1><span className="order-badge"><i/>{snapshot ? readable(snapshot.status) : 'ready'}</span></div><p>{snapshot ? `One ${snapshot.sku} · $${snapshot.retailTotal} Shopify test order` : 'Your agents are ready for the next paid order.'}</p></div>
           <div className="header-metrics">
             <div><span>Supplier</span><strong>{snapshot?.selectedSupplier ?? 'Evaluating'}</strong></div>
             <div><span>Escrow</span><strong>{snapshot?.vault.locked ? `${snapshot.vault.locked} locked` : snapshot?.vault.paid ? `${snapshot.vault.paid} paid` : 'Ready'}</strong></div>
