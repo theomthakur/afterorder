@@ -1,3 +1,4 @@
+import { PartnerLogo, PartnerStrip } from './Partners.tsx';
 import { CheckCircle2, Database, LockKeyhole, Radio, RefreshCcw, ShieldCheck } from 'lucide-react';
 
 const decisions = [
@@ -13,16 +14,18 @@ export function SystemDesign() {
   return <div className="design-page">
     <header className="design-heading"><p>SYSTEM DESIGN</p><h1>Authority, execution and evidence stay separate</h1><span>AfterOrder gives agents room to recover while keeping money movement and external claims inside validated boundaries.</span></header>
     <section className="architecture-board" aria-label="AfterOrder architecture">
-      <div className="arch-row sources"><div><b>Shopify</b><small>signed paid-order webhook</small></div><div><b>Merchant wallet</b><small>signed mandate authorization</small></div></div>
+      <div className="arch-row sources"><div><b><PartnerLogo name="Shopify"/> Shopify</b><small>signed orders/paid webhook</small></div><div><b><PartnerLogo name="Dynamic"/> Dynamic + <PartnerLogo name="MetaMask"/> MetaMask</b><small>merchant signs the onchain mandate</small></div></div>
       <span className="arch-arrow">↓</span>
-      <div className="arch-core"><b>AfterOrder orchestration API</b><small>validation · state machine · policy gateway · recovery</small></div>
+      <div className="arch-core"><b>AfterOrder orchestration API</b><small>validation · state machine · policy gateway · recovery · <PartnerLogo name="OpenRouter" size={12}/> OpenRouter → <PartnerLogo name="Gemini" size={12}/> Gemini planner</small></div>
       <span className="arch-arrow">↓</span>
       <div className="arch-agents"><div>Manager</div><div>Sourcing</div><div>Policy</div><div>Logistics</div><div>Purchasing</div><div>Reconciliation</div></div>
       <span className="arch-arrow">↓</span>
-      <div className="arch-row systems"><div><b>Supplier APIs</b><small>quote · reserve · dispatch</small></div><div><b>Monad</b><small>mandate · escrow · evidence release</small></div><div><b>Shopify Admin</b><small>fulfilment reconciliation</small></div></div>
+      <div className="arch-row systems"><div><b>Supplier APIs</b><small>quote · reserve · dispatch</small></div><div><b><PartnerLogo name="Monad"/> Monad testnet</b><small>mandate · escrow · evidence release</small></div><div><b><PartnerLogo name="Shopify"/> Shopify Admin</b><small>fulfilment + tracking</small></div><div><b><PartnerLogo name="Envio"/> Envio HyperIndex</b><small>escrow event indexing</small></div></div>
       <span className="arch-arrow">↓</span>
       <div className="arch-row outputs"><div><Radio size={17}/><b>SSE command center</b><small>live snapshot and 3D state</small></div><div><Database size={17}/><b>SQLite event record</b><small>orders, agents, offers, events</small></div></div>
     </section>
+
+    <section className="design-section"><div className="design-section-title"><p>LIVE INTEGRATIONS</p><h2>Every external system is a real account, not a mock</h2></div><PartnerStrip withRoles/></section>
 
     <section className="design-section"><div className="design-section-title"><p>THE EXECUTION PATH</p><h2>One order moves through ten explicit states</h2></div><ol className="state-line">{['Received','Validate','Source','Reserve','Fund','Accept','Prepare','Dispatch','Reconcile','Complete'].map((state, index) => <li key={state}><span>{index + 1}</span><b>{state}</b></li>)}</ol></section>
 

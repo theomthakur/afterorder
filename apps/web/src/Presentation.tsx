@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
+import { PartnerStrip } from './Partners.tsx';
 import { ArrowLeft, ArrowRight, Check, Maximize2, Minimize2 } from 'lucide-react';
 
 type Slide = { label: string; eyebrow: string; title: ReactNode; body: ReactNode };
@@ -33,6 +34,11 @@ const SLIDES: Slide[] = [
     label: 'Architecture', eyebrow: '05 · SYSTEM ARCHITECTURE',
     title: 'External systems connect through validated action boundaries',
     body: <div className="mini-architecture"><div className="external">Shopify<br/><small>paid order</small></div><i>→</i><div className="core">AfterOrder API<br/><small>workflow · policy · event log</small></div><i>→</i><div className="external">Supplier APIs<br/><small>quote · reserve · dispatch</small></div><span>↓</span><div className="chain">Monad contracts<br/><small>mandate · escrow · release</small></div><span>↓</span><div className="surface">Live command center<br/><small>SSE snapshot · 3D agent floor</small></div></div>
+  },
+  {
+    label: 'Live', eyebrow: '06 · LIVE ON MONAD TESTNET',
+    title: 'A real Shopify order, settled on Monad, fulfilled in Shopify',
+    body: <><p className="pitch-lede">Order #1001 on the afterorder-demo store fired a signed webhook. The Gemini planner picked Northstar, rerouted to Harbor Works when the reservation failed, and the escrow funded, accepted and released on Monad before Shopify marked the order fulfilled. The merchant mandate was signed from MetaMask through Dynamic.</p><PartnerStrip withRoles/></>
   },
   {
     label: 'Close', eyebrow: 'WHAT EXISTS TODAY',

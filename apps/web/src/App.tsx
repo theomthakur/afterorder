@@ -1,6 +1,8 @@
-import { lazy, Suspense, useEffect, useMemo, useState } from 'react';
-import { Activity, Bell, Check, ChevronRight, Command, Download, FileCheck2, Minus, PackageCheck, Play, Plus, Presentation as PresentationIcon, RotateCcw, ShieldCheck, Workflow, X } from 'lucide-react';
+import { lazy, Suspense, useEffect, useMemo, useState, type FormEvent } from 'react';
+import { Activity, Bell, MessageSquare, Send, Check, ChevronRight, Command, Download, FileCheck2, Minus, PackageCheck, Play, Plus, Presentation as PresentationIcon, RotateCcw, ShieldCheck, Workflow, X } from 'lucide-react';
 import type { AgentId, OrderSnapshot } from '../../../packages/shared/src/types.ts';
+import { Landing } from './Landing.tsx';
+import { PartnerLogo } from './Partners.tsx';
 const Scene = lazy(() => import('./Scene.tsx').then((module) => ({ default: module.Scene })));
 const Presentation = lazy(() => import('./Presentation.tsx').then((module) => ({ default: module.Presentation })));
 const SystemDesign = lazy(() => import('./SystemDesign.tsx').then((module) => ({ default: module.SystemDesign })));
@@ -35,6 +37,9 @@ function readable(value: string) { return value.replaceAll('_', ' ').replace(/([
 
 export function App() {
   const [view, setView] = useState<View>(() => window.location.hash === '#presentation' ? 'presentation' : window.location.hash === '#system-design' ? 'system-design' : 'command');
+  const [entered, setEntered] = useState(() => { if (window.location.hash) return true; try { return sessionStorage.getItem('ao-entered') === '1'; } catch { return false; } });
+  const [prompt, setPrompt] = useState('Fulfil the paid Shopify order: 1 × Walnut desk organizer, best approved supplier');
+  const [sentPrompt, setSentPrompt] = useState('');
   const [snapshot, setSnapshot] = useState<OrderSnapshot | null>(null);
   const [selected, setSelected] = useState<AgentId>('manager');
   const [starting, setStarting] = useState(false);
@@ -84,6 +89,10 @@ export function App() {
   const isComplete = snapshot?.status === 'purchase_complete';
   const isBlocked = snapshot?.status === 'blocked';
 
+  const enter = () => { try { sessionStorage.setItem('ao-entered', '1'); } catch { /* storage unavailable */ } setEntered(true); };
+  if (!entered) return <Landing onEnter={enter}/>;
+  const managerReply = snapshot ? [...snapshot.events].reverse().find((item) => ['PurchaseCompleted', 'WorkflowBlocked', 'PlanRevised', 'OfferSelected', 'EscrowFunded', 'SupplierPaid', 'ShopifyFulfilmentConfirmed'].includes(item.type)) : undefined;
+  const send = (event: FormEvent) => { event.preventDefault(); if (!prompt.trim()) return; setSentPrompt(prompt.trim()); void start(); };
   return <main className="app-shell">
     <header className="topbar">
       <div className="brand"><img className="brand-mark" src="/afterorder-logo.svg" alt=""/><strong>After<span>Order</span></strong><i/><small>COMMERCE, IN MOTION</small></div>
@@ -105,7 +114,11 @@ export function App() {
       {view === 'command' ? <><section className="workspace">
         <div className="workspace-heading">
           <div><p className="breadcrumb">OPERATIONS <span>/</span> LIVE COMMAND FLOOR</p><div className="title-line"><h1>{snapshot ? `${snapshot.displayOrder} · ${snapshot.product}` : 'Commerce control tower'}</h1><span className="order-badge"><i/>{snapshot ? readable(snapshot.status) : 'ready'}</span></div><p>{snapshot ? `One ${snapshot.sku} · $${snapshot.retailTotal} Shopify test order` : 'Your agents are ready for the next paid order.'}</p></div>
-          <button className="primary" onClick={start} disabled={starting || (REPLAY && !recording) || Boolean(snapshot && snapshot.status !== 'purchase_complete')}><Play size={15}/>{starting ? (REPLAY ? 'Replaying…' : 'Starting…') : snapshot ? 'Run new order' : 'Start demo order'}</button>
+          <form className="agent-composer" onSubmit={send} aria-label="Instruct the agents">
+            {sentPrompt && <div className="chat-thread"><p className="chat-user">{sentPrompt}</p><p className="chat-agent"><b>Manager</b>{starting ? 'On it. Briefing sourcing and policy…' : managerReply ? managerReply.message : 'Order received. Working…'}</p></div>}
+            <div className="composer-row"><MessageSquare size={15}/><input value={prompt} onChange={(event) => setPrompt(event.target.value)} placeholder="Tell the agents what to fulfil…" aria-label="Message to the manager agent"/><button className="primary" type="submit" disabled={starting || (REPLAY && !recording) || Boolean(snapshot && !['purchase_complete', 'blocked'].includes(snapshot.status))}><Send size={14}/>{starting ? 'Sending…' : 'Send'}</button></div>
+            <small className="composer-hint"><PartnerLogo name="Shopify" size={12}/> Paid Shopify orders start the agents automatically. Use chat to run a sandbox order.</small>
+          </form>
         </div>
         <section className="autonomy-strip" aria-label="Autonomous execution plan">
           <div className="autonomy-intro"><span><Command size={13}/> ZERO-TOUCH EXECUTION</span><strong>One paid order activates the whole team.</strong><small>Safe failures self-heal. Financial uncertainty stops closed.</small></div>

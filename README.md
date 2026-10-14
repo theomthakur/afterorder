@@ -15,6 +15,28 @@ The canonical demo is deliberately small and real: Northstar quotes the lowest p
 reservation fails because the last unit is gone. The manager automatically switches to Harbor
 Works without changing the merchant's 40 DemoUSD limit.
 
+## Live status (13 Oct 2026, Monad Metropolis submission)
+
+| Integration | Status | Evidence |
+|---|---|---|
+| **Monad testnet** | Live | MandateRegistry [`0x60df…0898`](https://testnet.monadvision.com/address/0x60dfb74d92872300878ceb07e354ec0d39550898), OrderEscrow [`0xf7b5…ef2b`](https://testnet.monadvision.com/address/0xf7b5e46bcb15282325f5b45d9cc819b08f66ef2b), DemoUSD [`0x6fe6…c67e`](https://testnet.monadvision.com/address/0x6fe6b2348c75a006fc30dd772a7ca471eaa1c67e) |
+| **Shopify** | Live | Dev store order #1001: signed `orders/paid` webhook started the agents; fulfilment `gid://shopify/Fulfillment/7761692754082` with tracking |
+| **Dynamic + MetaMask** | Live | Merchant wallet `0xdc93…1651` signed the mandate ([grantRoot](https://testnet.monadvision.com/tx/0x72dd49458d89af9d233f019ae5d679436fdefc20cce424a3aae600e546743bfb)) |
+| **OpenRouter → Gemini 2.5 Flash Lite** | Live | Manager decisions logged with `decisionMode: model` |
+| **Envio HyperIndex** | Deployed | Indexer for escrow events runs on Envio hosting; its development-tier endpoint was unavailable on 13 Oct, so the app shows reconciliation as pending |
+
+Order #1001 on Monad: [escrow funded](https://testnet.monadvision.com/tx/0x9b5ef305d5bd804642a8df00a3fe60134d9d4710d1beaa171aa14a34f4d7a1e6) · [supplier accepted](https://testnet.monadvision.com/tx/0xe7ac00ff086fbeaca8e22a0146660ad5e097fddafe57e961060c6944cf578240) · [released on signed dispatch evidence](https://testnet.monadvision.com/tx/0x7165bcd50688ce3f5cd815b4c4316bb96f175a4a23c86698c6b6dd1cd9f54ac2)
+
+The app opens on an intro page. **Try it out** goes to the command center, where you can instruct the manager agent in chat (sandbox order) or let a paid Shopify order start a live run. Full submission notes: [`docs/12-SUBMISSION-2026-10-13.md`](docs/12-SUBMISSION-2026-10-13.md).
+
+### Run live locally
+
+1. Copy `.env.example` to `.env` and fill in the Monad, OpenRouter, Dynamic, Shopify and Envio values.
+2. Fund the merchant wallet from the Monad faucet, then run `corepack pnpm contracts:deploy`.
+3. Run `corepack pnpm dev`, then open http://localhost:5173.
+4. Expose the API for Shopify: `npx cloudflared tunnel --url http://127.0.0.1:4100`. Then add an **Order payment** webhook to `<tunnel>/webhooks/shopify/orders-paid`, and set `SHOPIFY_WEBHOOK_SECRET` to the signing key Shopify shows.
+5. Optional: `npx tsx scripts/live-chain-proof.ts` runs one live order on Monad without Shopify.
+
 ## What works now
 
 - Two independently running supplier APIs with authenticated calls and separate SQLite state.
