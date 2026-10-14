@@ -457,3 +457,13 @@ body:has(.landing) { overflow: auto; }
 .facts > div { padding: 9px 10px; }
 .section-title { margin-top: 14px; }
 .feed article { padding: 9px 0; }
+
+/* Intro page: how to try the demo */
+.landing-howto { margin-bottom: 30px; padding: 22px; border: 1px solid #e4defb; border-radius: 18px; background: #fff; }
+.landing-howto ol { list-style: none; margin: 14px 0 6px; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 12px; }
+.landing-howto li { display: grid; grid-template-columns: 32px 1fr; gap: 10px; padding: 14px; border-radius: 14px; background: #f6f3ff; }
+.landing-howto li > span { width: 30px; height: 30px; display: grid; place-items: center; border-radius: 10px; background: #836ef9; color: #fff; font-weight: 800; }
+.landing-howto b { color: #2b1f5c; font: 700 14px "Sora", sans-serif; }
+.landing-howto p { margin-top: 4px; color: #5b5574; font-size: 12px; line-height: 1.5; }
+.landing-howto .landing-actions { margin-top: 14px; }
+.landing-howto .landing-actions small { color: #6b6585; font-size: 12px; }
