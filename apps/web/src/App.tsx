@@ -113,7 +113,7 @@ export function App() {
     </header>
     <section className={`layout ${view !== 'command' ? 'explain-mode' : ''}`}>
       <aside className="rail" aria-label="Product navigation">
-        {nav.map(({ view: destination, label, icon: Icon }) => <button key={label} onClick={() => openView(destination)} className={`rail-button ${view === destination ? 'active' : ''}`} aria-label={label} title={label}><Icon size={18}/>{view === destination && <i/>}</button>)}
+        {nav.filter((item) => !REPLAY || item.view !== 'orders').map(({ view: destination, label, icon: Icon }) => <button key={label} onClick={() => openView(destination)} className={`rail-button ${view === destination ? 'active' : ''}`} aria-label={label} title={label}><Icon size={18}/>{view === destination && <i/>}</button>)}
         <a className="rail-button rail-github" href="https://github.com/theomthakur/afterorder" target="_blank" rel="noreferrer" aria-label="Source code on GitHub" title="Source code on GitHub"><img src="/logos/github.svg" alt="" width={18} height={18}/></a>
         <div className="rail-bottom"><span title="Supplier APIs connected"><i/></span></div>
       </aside>
