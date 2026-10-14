@@ -115,6 +115,13 @@ export function getLatestOrder(): OrderSnapshot | null {
   return row ? hydrate(row) : null;
 }
 
+export type OrderSummary = { id: string; displayOrder: string; product: string; status: string; mode: string; selectedSupplier: string | null; retailTotal: number; escrowAmount: number; createdAt: string; updatedAt: string; lastEvent: string | null };
+export function listOrders(limit = 30): OrderSummary[] {
+  const rows = db.prepare('SELECT id, display_order, product, status, mode, selected_supplier, retail_total, escrow_amount, created_at, updated_at FROM orders ORDER BY created_at DESC LIMIT ?').all(limit) as any[];
+  const last = db.prepare('SELECT message FROM events WHERE order_id=? ORDER BY id DESC LIMIT 1');
+  return rows.map((row) => ({ id: row.id, displayOrder: row.display_order, product: row.product, status: row.status, mode: row.mode, selectedSupplier: row.selected_supplier, retailTotal: row.retail_total, escrowAmount: row.escrow_amount, createdAt: row.created_at, updatedAt: row.updated_at, lastEvent: (last.get(row.id) as { message?: string } | undefined)?.message ?? null }));
+}
+
 export function getOrder(id: string): OrderSnapshot | null {
   const row = db.prepare('SELECT * FROM orders WHERE id=?').get(id) as any;
   return row ? hydrate(row) : null;

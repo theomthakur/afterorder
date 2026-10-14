@@ -1,7 +1,8 @@
-import { lazy, Suspense, useEffect, useMemo, useState } from 'react';
-import { Activity, Bell, MessageSquare, Send, Check, ChevronRight, Command, Download, FileCheck2, Minus, PackageCheck, Play, Plus, Presentation as PresentationIcon, RotateCcw, ShieldCheck, Workflow, X } from 'lucide-react';
+import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react';
+import { Activity, Bell, Inbox, MessageSquare, Send, Check, ChevronRight, Command, Download, FileCheck2, Minus, PackageCheck, Play, Plus, Presentation as PresentationIcon, RotateCcw, ShieldCheck, Workflow, X } from 'lucide-react';
 import type { AgentId, OrderSnapshot } from '../../../packages/shared/src/types.ts';
 import { Landing } from './Landing.tsx';
+import { OrdersInbox, type OrderSummary } from './OrdersInbox.tsx';
 import { PartnerLogo } from './Partners.tsx';
 import { exportProofPdf } from './proofPdf.ts';
 const Scene = lazy(() => import('./Scene.tsx').then((module) => ({ default: module.Scene })));
@@ -11,8 +12,9 @@ const MerchantAccess = lazy(() => import('./MerchantAccess.tsx').then((module) =
 
 const stages = ['received','validating','sourcing','reserving','funding','awaiting_supplier','preparing_shipment','awaiting_dispatch','reconciling','purchase_complete'];
 const labels = ['Order','Validate','Offers','Reserve','Escrow','Supplier','Pack','Dispatch','Reconcile','Complete'];
-type View = 'command' | 'presentation' | 'system-design';
+type View = 'orders' | 'command' | 'presentation' | 'system-design';
 const nav: Array<{ view: View; label: string; icon: typeof Activity }> = [
+  { view: 'orders', label: 'Orders', icon: Inbox },
   { view: 'command', label: 'Command center', icon: Activity },
   { view: 'presentation', label: 'Presentation', icon: PresentationIcon },
   { view: 'system-design', label: 'System design', icon: Workflow }
@@ -37,7 +39,7 @@ const REPLAY_PACE = 2;
 function readable(value: string) { return value.replaceAll('_', ' ').replace(/([a-z])([A-Z])/g, '$1 $2'); }
 
 export function App() {
-  const [view, setView] = useState<View>(() => window.location.hash === '#presentation' ? 'presentation' : window.location.hash === '#system-design' ? 'system-design' : 'command');
+  const [view, setView] = useState<View>(() => (window.location.hash === '#presentation' ? 'presentation' : window.location.hash === '#system-design' ? 'system-design' : window.location.hash === '#orders' ? 'orders' : 'command'));
   const [entered, setEntered] = useState(() => { if (window.location.hash) return true; try { return sessionStorage.getItem('ao-entered') === '1'; } catch { return false; } });
   const [snapshot, setSnapshot] = useState<OrderSnapshot | null>(null);
   const [selected, setSelected] = useState<AgentId>('manager');
@@ -48,10 +50,13 @@ export function App() {
   const [followAgents, setFollowAgents] = useState(true);
   const [zoom, setZoom] = useState(1);
   const [reset, setReset] = useState(0);
+  const [orders, setOrders] = useState<OrderSummary[]>([]);
+  const openOrderId = useRef<string | null>(null);
   const [recording, setRecording] = useState<ReplayRecording | null>(null);
   const refresh = async () => {
     if (REPLAY) return;
-    const [orderResponse, mandateResponse] = await Promise.all([fetch('/api/orders/latest'), fetch('/api/merchant/mandate/status')]);
+    const [orderResponse, mandateResponse, listResponse] = await Promise.all([fetch(openOrderId.current ? `/api/orders/${openOrderId.current}` : '/api/orders/latest'), fetch('/api/merchant/mandate/status'), fetch('/api/orders')]);
+    if (listResponse.ok) setOrders(await listResponse.json());
     if (orderResponse.ok) setSnapshot(await orderResponse.json());
     if (mandateResponse.ok) setMandate((await mandateResponse.json()).mandate ?? null);
   };
@@ -61,7 +66,7 @@ export function App() {
     setHealth({ ok: true, mode: 'replay', dependencies: { openrouter: false, monad: false, shopify: false, envio: false } });
   }, []);
   useEffect(() => { if (REPLAY) return; void refresh(); void fetch('/api/health').then((response) => response.json()).then(setHealth); const events = new EventSource('/api/events'); events.addEventListener('order', () => void refresh()); return () => events.close(); }, []);
-  useEffect(() => { const onHash = () => setView(window.location.hash === '#presentation' ? 'presentation' : window.location.hash === '#system-design' ? 'system-design' : 'command'); window.addEventListener('hashchange', onHash); return () => window.removeEventListener('hashchange', onHash); }, []);
+  useEffect(() => { const onHash = () => setView(window.location.hash === '#presentation' ? 'presentation' : window.location.hash === '#system-design' ? 'system-design' : window.location.hash === '#orders' ? 'orders' : 'command'); window.addEventListener('hashchange', onHash); return () => window.removeEventListener('hashchange', onHash); }, []);
   useEffect(() => {
     if (!followAgents || !snapshot) return;
     const next = snapshot.agents.find((agent) => ['retrying', 'blocked'].includes(agent.status))
@@ -78,7 +83,7 @@ export function App() {
       if (index === recording.frames.length - 1) setStarting(false);
     }, frame.at * REPLAY_PACE));
   };
-  const start = async () => { if (REPLAY) return playReplay(); setStarting(true); const response = await fetch('/api/demo/start', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({scenario:'supplier_failover'}) }); if (response.ok) { await refresh(); setSelected('manager'); } setStarting(false); };
+  const start = async () => { if (REPLAY) return playReplay(); openOrderId.current = null; setStarting(true); const response = await fetch('/api/demo/start', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({scenario:'supplier_failover'}) }); if (response.ok) { await refresh(); setSelected('manager'); } setStarting(false); };
   const resume = async () => { if (REPLAY) return playReplay(); if (!snapshot) return; setStarting(true); const response = await fetch(`/api/orders/${snapshot.id}/resume`, { method: 'POST' }); if (response.ok) await refresh(); setStarting(false); };
   const activeIndex = snapshot ? Math.max(0, stages.indexOf(snapshot.status)) : -1;
   const selectedAgent = useMemo(() => snapshot?.agents.find((agent) => agent.id === selected), [snapshot, selected]);
@@ -88,7 +93,9 @@ export function App() {
   const isComplete = snapshot?.status === 'purchase_complete';
   const isBlocked = snapshot?.status === 'blocked';
 
-  const enter = () => { try { sessionStorage.setItem('ao-entered', '1'); } catch { /* storage unavailable */ } setEntered(true); };
+  const openOrder = (id: string) => { openOrderId.current = id; setSelected('manager'); void refresh(); window.location.hash = ''; setView('command'); };
+  const runFromInbox = async () => { await start(); window.location.hash = ''; setView('command'); };
+  const enter = () => { try { sessionStorage.setItem('ao-entered', '1'); } catch { /* storage unavailable */ } setEntered(true); if (!REPLAY) { window.location.hash = 'orders'; setView('orders'); } };
   if (!entered) return <Landing onEnter={enter}/>;
   const aiDecisions = (snapshot?.events ?? []).filter((item) => ['OfferSelected', 'PlanRevised'].includes(item.type)).map((item) => ({ id: item.id, type: item.type, message: item.message, mode: String((item.metadata as Record<string, unknown> | undefined)?.decisionMode ?? ''), rationale: String((item.metadata as Record<string, unknown> | undefined)?.rationale ?? item.message) }));
   return <main className="app-shell">
@@ -107,11 +114,12 @@ export function App() {
     <section className={`layout ${view !== 'command' ? 'explain-mode' : ''}`}>
       <aside className="rail" aria-label="Product navigation">
         {nav.map(({ view: destination, label, icon: Icon }) => <button key={label} onClick={() => openView(destination)} className={`rail-button ${view === destination ? 'active' : ''}`} aria-label={label} title={label}><Icon size={18}/>{view === destination && <i/>}</button>)}
+        <a className="rail-button rail-github" href="https://github.com/theomthakur/afterorder" target="_blank" rel="noreferrer" aria-label="Source code on GitHub" title="Source code on GitHub"><img src="/logos/github.svg" alt="" width={18} height={18}/></a>
         <div className="rail-bottom"><span title="Supplier APIs connected"><i/></span></div>
       </aside>
       {view === 'command' ? <><section className="workspace">
         <div className="workspace-heading">
-          <div><p className="breadcrumb">OPERATIONS <span>/</span> LIVE COMMAND FLOOR</p><div className="title-line"><h1>{snapshot ? `${snapshot.displayOrder} · ${snapshot.product}` : 'Commerce control tower'}</h1><span className="order-badge"><i/>{snapshot ? readable(snapshot.status) : 'ready'}</span></div><p>{snapshot ? `One ${snapshot.sku} · $${snapshot.retailTotal} Shopify test order` : 'Your agents are ready for the next paid order.'}</p></div>
+          <div><p className="breadcrumb">{!REPLAY && <button className="crumb-link" onClick={() => openView('orders')}>ORDERS</button>}{REPLAY && 'OPERATIONS'} <span>/</span> {snapshot?.displayOrder ?? 'LIVE COMMAND FLOOR'}</p><div className="title-line"><h1>{snapshot ? `${snapshot.displayOrder} · ${snapshot.product}` : 'Commerce control tower'}</h1><span className="order-badge"><i/>{snapshot ? readable(snapshot.status) : 'ready'}</span></div><p>{snapshot ? `One ${snapshot.sku} · $${snapshot.retailTotal} Shopify test order` : 'Your agents are ready for the next paid order.'}</p></div>
           <div className="header-metrics">
             <div><span>Supplier</span><strong>{snapshot?.selectedSupplier ?? 'Evaluating'}</strong></div>
             <div><span>Escrow</span><strong>{snapshot?.vault.locked ? `${snapshot.vault.locked} locked` : snapshot?.vault.paid ? `${snapshot.vault.paid} paid` : 'Ready'}</strong></div>
@@ -143,7 +151,7 @@ export function App() {
         <div className="offers">{snapshot?.offers.map((offer) => <div className={`offer ${offer.status}`} key={offer.id}><div><strong>{offer.supplierName}</strong><small>{offer.deliveryDays} business days</small></div><div><b>{offer.total}</b><small>DemoUSD</small></div><span>{readable(offer.status)}</span></div>) ?? <p className="muted">Offers appear when sourcing begins.</p>}</div>
         <div className="section-title"><h3>Live activity</h3><button className="text-btn" onClick={refresh}><RotateCcw size={13}/>Refresh</button></div>
         <div className="feed">{[...(snapshot?.events ?? [])].reverse().map((event) => <article key={event.id}><i/><div><p>{event.message}</p><small>{new Date(event.createdAt).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit',second:'2-digit'})}</small></div></article>)}</div>
-      </aside></> : <section className="explain-workspace"><Suspense fallback={<div className="view-loading">Loading view…</div>}>{view === 'presentation' ? <Presentation/> : <SystemDesign/>}</Suspense></section>}
+      </aside></> : <section className="explain-workspace"><Suspense fallback={<div className="view-loading">Loading view…</div>}>{view === 'orders' ? <OrdersInbox orders={orders} onOpen={openOrder} onRun={() => void runFromInbox()} running={starting}/> : view === 'presentation' ? <Presentation/> : <SystemDesign/>}</Suspense></section>}
     </section>
   </main>;
 }

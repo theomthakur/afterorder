@@ -3,7 +3,7 @@ import Fastify from 'fastify';
 import cors from '@fastify/cors';
 import rawBody from 'fastify-raw-body';
 import crypto from 'node:crypto';
-import { claimOperation, consumeMerchantAuthorizationChallenge, createMerchantAuthorizationChallenge, createOrder, getLatestOrder, getOrder, getOrderByShopifyId, getRuntimeSetting, resumeWorkflow, saveMerchantAuthorization, setRuntimeSetting } from './db.ts';
+import { claimOperation, consumeMerchantAuthorizationChallenge, createMerchantAuthorizationChallenge, createOrder, getLatestOrder, getOrder, listOrders, getOrderByShopifyId, getRuntimeSetting, resumeWorkflow, saveMerchantAuthorization, setRuntimeSetting } from './db.ts';
 import { runWorkflow, startWorkers, subscribe } from './workflow.ts';
 import { startDemoSchema } from '../../../packages/shared/src/schemas.ts';
 import { chainIsLive, getActiveMandateStatus } from './integrations/chain.ts';
@@ -22,6 +22,7 @@ app.get('/api/health', async () => ({ ok: true, mode: process.env.APP_MODE ?? 's
   openrouter: Boolean(process.env.OPENROUTER_API_KEY), monad: chainIsLive(),
   shopify: Boolean(process.env.SHOPIFY_ACCESS_TOKEN), envio: Boolean(process.env.ENVIO_GRAPHQL_URL)
 } }));
+app.get('/api/orders', async () => listOrders());
 app.get('/api/orders/latest', async () => getLatestOrder());
 app.get('/api/merchant/mandate/status', async () => ({ mode: chainIsLive() ? 'onchain' : 'sandbox', mandate: await getActiveMandateStatus() }));
 app.get<{ Params: { id: string } }>('/api/orders/:id', async (request, reply) => getOrder(request.params.id) ?? reply.code(404).send({ error: 'Order not found' }));
