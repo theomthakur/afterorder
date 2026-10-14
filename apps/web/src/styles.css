@@ -391,3 +391,16 @@ body:has(.landing) { overflow: auto; }
 .feed { flex: 1 1 auto; min-height: 90px; overflow-y: auto; padding-right: 4px; overscroll-behavior: contain; border: 1px solid #e4defb; border-radius: 12px; background: #fff; padding: 2px 10px; }
 .chat-thread::-webkit-scrollbar, .summary::-webkit-scrollbar, .offers::-webkit-scrollbar, .feed::-webkit-scrollbar { width: 5px; }
 .chat-thread::-webkit-scrollbar-thumb, .summary::-webkit-scrollbar-thumb, .offers::-webkit-scrollbar-thumb, .feed::-webkit-scrollbar-thumb { background: #d6cdfd; border-radius: 4px; }
+
+/* AI decisions card (replaces chat) */
+.assistant-head .small-run { padding: 6px 10px; font-size: 9px; display: inline-flex; align-items: center; gap: 5px; color: #fff; letter-spacing: 0; }
+.decisions-card { max-height: 150px; overflow-y: auto; overscroll-behavior: contain; display: grid; gap: 7px; margin-bottom: 12px; padding: 9px; border: 1px solid #e4defb; border-radius: 14px; background: #fff; box-shadow: 0 4px 14px #2b1f5c0a; }
+.decisions-card article { padding: 8px 10px; border-radius: 10px; background: #f6f3ff; }
+.decisions-card article > div { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.decisions-card b { color: #2b1f5c; font-size: 10px; }
+.decisions-card em { display: inline-flex; align-items: center; gap: 4px; font-style: normal; font-size: 8px; color: #6b6585; }
+.decisions-card em.model { color: #4b36c9; font-weight: 700; }
+.decisions-card p { margin-top: 4px; color: #2b1f5c; font-size: 10.5px; line-height: 1.45; }
+.decisions-card small { display: block; margin-top: 3px; color: #8a84a3; font-size: 8.5px; }
+.decisions-empty { display: flex; align-items: center; gap: 6px; color: #6b6585; font-size: 10px; padding: 4px 2px; }
+.decisions-card::-webkit-scrollbar { width: 5px; }.decisions-card::-webkit-scrollbar-thumb { background: #d6cdfd; border-radius: 4px; }

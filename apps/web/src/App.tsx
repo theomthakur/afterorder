@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useMemo, useState, type FormEvent } from 'react';
+import { lazy, Suspense, useEffect, useMemo, useState } from 'react';
 import { Activity, Bell, MessageSquare, Send, Check, ChevronRight, Command, Download, FileCheck2, Minus, PackageCheck, Play, Plus, Presentation as PresentationIcon, RotateCcw, ShieldCheck, Workflow, X } from 'lucide-react';
 import type { AgentId, OrderSnapshot } from '../../../packages/shared/src/types.ts';
 import { Landing } from './Landing.tsx';
@@ -39,8 +39,6 @@ function readable(value: string) { return value.replaceAll('_', ' ').replace(/([
 export function App() {
   const [view, setView] = useState<View>(() => window.location.hash === '#presentation' ? 'presentation' : window.location.hash === '#system-design' ? 'system-design' : 'command');
   const [entered, setEntered] = useState(() => { if (window.location.hash) return true; try { return sessionStorage.getItem('ao-entered') === '1'; } catch { return false; } });
-  const [prompt, setPrompt] = useState('Fulfil the paid Shopify order: 1 × Walnut desk organizer, best approved supplier');
-  const [sentPrompt, setSentPrompt] = useState('');
   const [snapshot, setSnapshot] = useState<OrderSnapshot | null>(null);
   const [selected, setSelected] = useState<AgentId>('manager');
   const [starting, setStarting] = useState(false);
@@ -92,8 +90,7 @@ export function App() {
 
   const enter = () => { try { sessionStorage.setItem('ao-entered', '1'); } catch { /* storage unavailable */ } setEntered(true); };
   if (!entered) return <Landing onEnter={enter}/>;
-  const managerReply = snapshot ? [...snapshot.events].reverse().find((item) => ['PurchaseCompleted', 'WorkflowBlocked', 'PlanRevised', 'OfferSelected', 'EscrowFunded', 'SupplierPaid', 'ShopifyFulfilmentConfirmed'].includes(item.type)) : undefined;
-  const send = (event: FormEvent) => { event.preventDefault(); if (!prompt.trim()) return; setSentPrompt(prompt.trim()); void start(); };
+  const aiDecisions = (snapshot?.events ?? []).filter((item) => ['OfferSelected', 'PlanRevised'].includes(item.type)).map((item) => ({ id: item.id, type: item.type, message: item.message, mode: String((item.metadata as Record<string, unknown> | undefined)?.decisionMode ?? ''), rationale: String((item.metadata as Record<string, unknown> | undefined)?.rationale ?? item.message) }));
   return <main className="app-shell">
     <header className="topbar">
       <div className="brand"><img className="brand-mark" src="/afterorder-logo.svg" alt=""/><strong>After<span>Order</span></strong><i/><small>COMMERCE, IN MOTION</small></div>
@@ -135,12 +132,8 @@ export function App() {
         </div>
       </section>
       <aside className="context">
-        <div className="assistant-head"><span><MessageSquare size={13}/> ASK THE MANAGER</span></div>
-          <form className="agent-composer side" onSubmit={send} aria-label="Instruct the agents">
-            {sentPrompt && <div className="chat-thread"><p className="chat-user">{sentPrompt}</p><p className="chat-agent"><b>Manager</b>{starting ? 'On it. Briefing sourcing and policy…' : managerReply ? managerReply.message : 'Order received. Working…'}</p></div>}
-            <div className="composer-row"><MessageSquare size={15}/><input value={prompt} onChange={(event) => setPrompt(event.target.value)} placeholder="Tell the agents what to fulfil…" aria-label="Message to the manager agent"/><button className="primary" type="submit" disabled={starting || (REPLAY && !recording) || Boolean(snapshot && !['purchase_complete', 'blocked'].includes(snapshot.status))}><Send size={14}/>{starting ? 'Sending…' : 'Send'}</button></div>
-            <small className="composer-hint"><PartnerLogo name="Shopify" size={12}/> Paid Shopify orders start the agents automatically. Chat runs a sandbox order.</small>
-          </form>
+        <div className="assistant-head"><span><PartnerLogo name="Gemini" size={12}/> AI DECISIONS</span><button className="primary small-run" onClick={start} disabled={starting || (REPLAY && !recording) || Boolean(snapshot && !['purchase_complete', 'blocked'].includes(snapshot.status))}><Play size={12}/>{starting ? 'Starting…' : 'Run sandbox order'}</button></div>
+        <div className="decisions-card">{aiDecisions.length ? aiDecisions.map((item) => <article key={item.id}><div><b>{item.type === 'PlanRevised' ? 'Recovery' : 'Supplier choice'}</b><em className={item.mode === 'model' ? 'model' : ''}>{item.mode === 'model' ? <><PartnerLogo name="OpenRouter" size={10}/> Gemini via OpenRouter</> : 'Policy rule'}</em></div><p>{item.rationale}</p><small>{item.message}</small></article>) : <p className="decisions-empty"><PartnerLogo name="Shopify" size={12}/> A paid Shopify order starts the agents. Their reasoning appears here.</p>}</div>
         <div className="context-eyebrow"><span>AGENT INSPECTOR</span><small>{snapshot?.agents.length ?? 6} desks</small></div>
         <div className="agent-profile"><span className={`agent-portrait ${selectedAgent?.status ?? 'idle'}`}><Command size={21}/><i/></span><div><p>{selected === 'manager' ? 'CONTROL TOWER' : 'SPECIALIST AGENT'}</p><h2>{selectedAgent?.name ?? 'Manager'}</h2></div><span className={`pill ${selectedAgent?.status ?? 'idle'}`}>{readable(selectedAgent?.status ?? 'idle')}</span></div>
         <p className="summary">{selectedAgent?.summary ?? 'Waiting for a paid Shopify order.'}</p>
