@@ -407,3 +407,9 @@ body:has(.landing) { overflow: auto; }
 .sequence li b { color: #4b36c9; font-size: 10.5px; }
 .sequence li p { color: #2b1f5c; font-size: 10.5px; line-height: 1.4; }
 @media (max-width: 960px) { .layer { grid-template-columns: 1fr; } .layer-cards, .sequence { grid-template-columns: 1fr; } }
+
+/* Spacing fix: journey bar no longer attaches to a strip above it. */
+.workspace-heading { margin-bottom: 14px; }
+.journey { margin-top: 0; border: 1px solid #e4defb; border-radius: 14px; background: #fff; }
+.journey-heading span { color: #6e54ff; }
+.workflow-outcome { margin-top: 12px; }
