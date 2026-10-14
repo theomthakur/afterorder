@@ -48,7 +48,7 @@ function Rack({ position, rotationY = 0 }: { position: V3; rotationY?: number })
 }
 
 function FloorSign({ text, position, width = 2.3 }: { text: string; position: V3; width?: number }) {
-  return <Html center position={position} rotation={[-Math.PI / 2, 0, 0]} transform distanceFactor={10} style={{ pointerEvents: 'none' }}><span className="floor-sign" style={{ width: `${width * 38}px` }}>{text}</span></Html>;
+  return <Html center position={position} rotation={[-Math.PI / 2, 0, 0]} transform distanceFactor={10} zIndexRange={[4, 0]} style={{ pointerEvents: 'none' }}><span className="floor-sign" style={{ width: `${width * 38}px` }}>{text}</span></Html>;
 }
 
 function Warehouse() {
@@ -61,7 +61,7 @@ function Warehouse() {
     {Array.from({ length: 16 }, (_, index) => <Box key={index} position={[6.2, .1, -4.7 + index * .62]} size={[.55, .018, .09]} color={index % 2 ? '#f6c453' : '#34383f'} radius={.002}/>) }
     <Rack position={[-6.6, .08, -1.2]}/><Rack position={[6.65, .08, -2.2]} rotationY={Math.PI}/>
     <Crate position={[6.2, .1, 3.75]} scale={1.25}/><Crate position={[6.95, .1, 3.9]}/><Crate position={[-6.4, .1, 3.9]} scale={1.15}/>
-    <FloorSign text="SHOPIFY INBOUND" position={[-5.9, .105, 4.85]}/><FloorSign text="SUPPLIER DOCKS" position={[6.15, .105, -4.7]}/><FloorSign text="AUTONOMOUS COMMERCE FLOOR" position={[-.25, .105, -5.05]} width={3.5}/>
+    <FloorSign text="SHOPIFY INBOUND" position={[-5.9, .105, 4.85]}/><FloorSign text="SUPPLIER DOCKS" position={[6.15, .105, -4.7]}/>
   </group>;
 }
 
@@ -120,7 +120,7 @@ function Station({ agent, selected, onSelect }: { agent: AgentState; selected: b
       <Box position={[size / 2 - .31, .29, -size / 2 + .38]} size={[.38, .42, .43]} color="#f0edf7"/>
       {[0, 1, 2].map((row) => <Box key={row} position={[size / 2 - .31, .52 + row * .05, -size / 2 + .38]} size={[.31, .045, .34]} color={[department.color, '#b5acc7', '#fbfaff'][row]!}/>) }
     </group>
-    <Html center position={[0, central ? 2.38 : 2.18, .04]} zIndexRange={[30, 0]}>
+    <Html center position={[0, central ? 2.38 : 2.18, .04]} zIndexRange={[80, 40]}>
       <button className={`station-label ${selected ? 'selected' : ''} ${central ? 'central' : ''}`} style={{ '--agent': department.color, '--agent-pale': department.pale } as CSSProperties} onClick={onSelect}>
         {selected && <span className="station-eyebrow"><i/>{central ? 'CONTROL TOWER' : department.label.toUpperCase()}</span>}<strong>{agent.name}</strong>
         <span className={`station-status ${agent.status}`}><i/>{statusCopy[agent.status]}{selected && <em>{central ? '5 specialists' : 'Agent desk'}</em>}</span>

@@ -387,3 +387,23 @@ body:has(.landing) { overflow: auto; }
 .decisions-empty { display: flex; align-items: center; gap: 6px; color: #6b6585; font-size: 10px; padding: 4px 2px; }
 
 .assistant-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; color: #6e54ff; font-size: 8px; font-weight: 700; letter-spacing: 1.3px; }
+
+/* Detailed layered architecture (13 Oct) */
+.layered-arch { display: grid; gap: 10px; margin: 18px 0 30px; }
+.layer { display: grid; grid-template-columns: 170px 1fr; gap: 12px; align-items: stretch; }
+.layer-name { display: grid; align-content: center; gap: 3px; padding: 12px 14px; border-radius: 14px; background: #2b1f5c; color: #fff; }
+.layer-name span { color: #b9acff; font-size: 9px; font-weight: 700; letter-spacing: 1.2px; }
+.layer-name b { font: 700 14px "Sora", sans-serif; }
+.layer-name small { color: #cfc6ff; font-size: 9.5px; }
+.layer-cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.layer-cards article { padding: 11px 13px; border: 1px solid #e4defb; border-radius: 14px; background: #fff; }
+.layer-cards h4 { display: flex; align-items: center; gap: 7px; margin: 0 0 6px; color: #2b1f5c; font: 700 12px "Sora", sans-serif; }
+.layer-cards ul { margin: 0; padding-left: 15px; color: #4d4766; font-size: 10.5px; line-height: 1.55; }
+.layer + .layer { position: relative; }
+.layer + .layer::before { content: "↓"; position: absolute; left: 78px; top: -11px; color: #836ef9; font-size: 11px; }
+.sequence { list-style: none; margin: 12px 0 0; padding: 0; display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px 14px; }
+.sequence li { display: grid; grid-template-columns: 26px 98px 1fr; align-items: center; gap: 8px; padding: 8px 10px; border: 1px solid #e4defb; border-radius: 12px; background: #fff; }
+.sequence li span { width: 24px; height: 24px; display: grid; place-items: center; border-radius: 8px; background: #836ef9; color: #fff; font-size: 10px; font-weight: 700; }
+.sequence li b { color: #4b36c9; font-size: 10.5px; }
+.sequence li p { color: #2b1f5c; font-size: 10.5px; line-height: 1.4; }
+@media (max-width: 960px) { .layer { grid-template-columns: 1fr; } .layer-cards, .sequence { grid-template-columns: 1fr; } }
