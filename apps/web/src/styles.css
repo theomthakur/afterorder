@@ -360,3 +360,16 @@ body:has(.landing) { overflow: auto; }
 .chat-thread { max-height: 86px; overflow: auto; padding-right: 2px; }
 .chat-user, .chat-agent { font-size: 9.5px; padding: 6px 9px; }
 .composer-hint { font-size: 7.5px; }
+
+/* Placement pass (13 Oct): title row with key numbers; chat lives in the right panel. */
+.workspace-heading { align-items: center; min-height: 64px; }
+.header-metrics { display: flex; gap: 8px; flex-shrink: 0; }
+.header-metrics > div { min-width: 112px; padding: 8px 12px; border: 1px solid #e4defb; border-radius: 12px; background: #ffffffd9; }
+.header-metrics span { display: block; color: #6b6585; font-size: 8px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; }
+.header-metrics strong { display: block; margin-top: 3px; color: #2b1f5c; font: 700 12px "Sora", sans-serif; white-space: nowrap; }
+.assistant-head { margin-bottom: 8px; }
+.assistant-head span { display: inline-flex; align-items: center; gap: 6px; color: #6e54ff; font-size: 8px; font-weight: 700; letter-spacing: 1.3px; }
+.agent-composer.side { width: 100%; margin-bottom: 16px; padding: 10px; border: 1px solid #e4defb; border-radius: 14px; background: #faf8ff; }
+.agent-composer.side .chat-thread { max-height: 120px; }
+.agent-composer.side .composer-row input { font-size: 10.5px; }
+.facts { grid-template-columns: 1fr 1fr 1fr; }

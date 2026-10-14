@@ -115,16 +115,11 @@ export function App() {
       {view === 'command' ? <><section className="workspace">
         <div className="workspace-heading">
           <div><p className="breadcrumb">OPERATIONS <span>/</span> LIVE COMMAND FLOOR</p><div className="title-line"><h1>{snapshot ? `${snapshot.displayOrder} · ${snapshot.product}` : 'Commerce control tower'}</h1><span className="order-badge"><i/>{snapshot ? readable(snapshot.status) : 'ready'}</span></div><p>{snapshot ? `One ${snapshot.sku} · $${snapshot.retailTotal} Shopify test order` : 'Your agents are ready for the next paid order.'}</p></div>
-          <form className="agent-composer" onSubmit={send} aria-label="Instruct the agents">
-            {sentPrompt && <div className="chat-thread"><p className="chat-user">{sentPrompt}</p><p className="chat-agent"><b>Manager</b>{starting ? 'On it. Briefing sourcing and policy…' : managerReply ? managerReply.message : 'Order received. Working…'}</p></div>}
-            <div className="composer-row"><MessageSquare size={15}/><input value={prompt} onChange={(event) => setPrompt(event.target.value)} placeholder="Tell the agents what to fulfil…" aria-label="Message to the manager agent"/><button className="primary" type="submit" disabled={starting || (REPLAY && !recording) || Boolean(snapshot && !['purchase_complete', 'blocked'].includes(snapshot.status))}><Send size={14}/>{starting ? 'Sending…' : 'Send'}</button></div>
-            <small className="composer-hint"><PartnerLogo name="Shopify" size={12}/> Paid Shopify orders start the agents automatically. Use chat to run a sandbox order.</small>
-          </form>
-        </div>
-        <div className="order-strip">
-          <div className="order-metric"><span>SUPPLIER</span><strong>{snapshot?.selectedSupplier ?? 'Evaluating'}</strong></div>
-          <div className="order-metric"><span>AGENTS</span><strong>{completeAgents} / {snapshot?.agents.length ?? 6} complete</strong></div>
-          <div className="order-metric"><span>SPEND LIMIT</span><strong>{mandate?.maxPerOrder ?? '40'} DemoUSD</strong></div>
+          <div className="header-metrics">
+            <div><span>Supplier</span><strong>{snapshot?.selectedSupplier ?? 'Evaluating'}</strong></div>
+            <div><span>Escrow</span><strong>{snapshot?.vault.locked ? `${snapshot.vault.locked} locked` : snapshot?.vault.paid ? `${snapshot.vault.paid} paid` : 'Ready'}</strong></div>
+            <div><span>Spend left</span><strong>{mandate ? `${mandate.remaining} / ${mandate.maxCumulative}` : '40 per order'}</strong></div>
+          </div>
         </div>
         <div className="journey"><div className="journey-heading"><span>LIVE ORDER JOURNEY</span><small>{snapshot ? `${activeIndex + 1} / ${labels.length} · ${readable(snapshot.status)}` : 'Waiting for order'}</small></div><div className="journey-track">{labels.map((label, index) => <div key={label} className={`journey-step ${index <= activeIndex ? 'done' : ''} ${index === activeIndex ? 'current' : ''}`}><span>{index < activeIndex ? <Check size={10}/> : index + 1}</span><small>{label}</small></div>)}</div></div>
         {(isComplete || isBlocked) && <section className={`workflow-outcome ${isBlocked ? 'blocked' : 'complete'}`}>
@@ -140,15 +135,21 @@ export function App() {
         </div>
       </section>
       <aside className="context">
+        <div className="assistant-head"><span><MessageSquare size={13}/> ASK THE MANAGER</span></div>
+          <form className="agent-composer side" onSubmit={send} aria-label="Instruct the agents">
+            {sentPrompt && <div className="chat-thread"><p className="chat-user">{sentPrompt}</p><p className="chat-agent"><b>Manager</b>{starting ? 'On it. Briefing sourcing and policy…' : managerReply ? managerReply.message : 'Order received. Working…'}</p></div>}
+            <div className="composer-row"><MessageSquare size={15}/><input value={prompt} onChange={(event) => setPrompt(event.target.value)} placeholder="Tell the agents what to fulfil…" aria-label="Message to the manager agent"/><button className="primary" type="submit" disabled={starting || (REPLAY && !recording) || Boolean(snapshot && !['purchase_complete', 'blocked'].includes(snapshot.status))}><Send size={14}/>{starting ? 'Sending…' : 'Send'}</button></div>
+            <small className="composer-hint"><PartnerLogo name="Shopify" size={12}/> Paid Shopify orders start the agents automatically. Chat runs a sandbox order.</small>
+          </form>
         <div className="context-eyebrow"><span>AGENT INSPECTOR</span><small>{snapshot?.agents.length ?? 6} desks</small></div>
         <div className="agent-profile"><span className={`agent-portrait ${selectedAgent?.status ?? 'idle'}`}><Command size={21}/><i/></span><div><p>{selected === 'manager' ? 'CONTROL TOWER' : 'SPECIALIST AGENT'}</p><h2>{selectedAgent?.name ?? 'Manager'}</h2></div><span className={`pill ${selectedAgent?.status ?? 'idle'}`}>{readable(selectedAgent?.status ?? 'idle')}</span></div>
         <p className="summary">{selectedAgent?.summary ?? 'Waiting for a paid Shopify order.'}</p>
         {alert && <div className={`notice ${alert.type === 'WorkflowBlocked' ? 'danger' : ''}`}><Bell size={14}/><div><strong>{readable(alert.type)}</strong><span>{alert.message}</span>{snapshot?.status === 'blocked' && <button className="text-btn" onClick={resume} disabled={starting}><RotateCcw size={13}/>{starting ? 'Retrying…' : 'Resume workflow'}</button>}</div></div>}
-        <div className="facts"><div><span>Selected supplier</span><strong>{snapshot?.selectedSupplier ?? 'Not selected'}</strong></div><div><span>Escrow state</span><strong>{snapshot?.vault.locked ? `${snapshot.vault.locked} locked` : snapshot?.vault.paid ? `${snapshot.vault.paid} paid` : 'Ready'}</strong></div><div><span>Tracking</span><strong>{snapshot?.trackingNumber ?? 'Not created'}</strong></div><div><span>Chain mode</span><strong>{health?.dependencies.monad ? 'Live testnet' : 'Sandbox'}</strong></div><div><span>Mandate authority</span><strong>{mandate ? `${mandate.remaining} / ${mandate.maxCumulative} remaining${mandate.revoked ? ' · revoked' : ''}` : '40 per order · sandbox'}</strong></div></div>
+        <div className="facts"><div><span>Escrow state</span><strong>{snapshot?.vault.locked ? `${snapshot.vault.locked} locked` : snapshot?.vault.paid ? `${snapshot.vault.paid} paid` : 'Ready'}</strong></div><div><span>Tracking</span><strong>{snapshot?.trackingNumber ?? 'Not created'}</strong></div><div><span>Mandate authority</span><strong>{mandate ? `${mandate.remaining} / ${mandate.maxCumulative} remaining${mandate.revoked ? ' · revoked' : ''}` : '40 per order · sandbox'}</strong></div></div>
         <div className="section-title"><h3>Supplier offers</h3><span>{snapshot?.offers.length ?? 0}</span></div>
         <div className="offers">{snapshot?.offers.map((offer) => <div className={`offer ${offer.status}`} key={offer.id}><div><strong>{offer.supplierName}</strong><small>{offer.deliveryDays} business days</small></div><div><b>{offer.total}</b><small>DemoUSD</small></div><span>{readable(offer.status)}</span></div>) ?? <p className="muted">Offers appear when sourcing begins.</p>}</div>
         <div className="section-title"><h3>Live activity</h3><button className="text-btn" onClick={refresh}><RotateCcw size={13}/>Refresh</button></div>
-        <div className="feed">{[...(snapshot?.events ?? [])].reverse().map((event) => <article key={event.id}><i/><div><p>{event.message}</p><small>{readable(event.actor)} · {new Date(event.createdAt).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit',second:'2-digit'})}</small></div></article>)}</div>
+        <div className="feed">{[...(snapshot?.events ?? [])].reverse().map((event) => <article key={event.id}><i/><div><p>{event.message}</p><small>{new Date(event.createdAt).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit',second:'2-digit'})}</small></div></article>)}</div>
       </aside></> : <section className="explain-workspace"><Suspense fallback={<div className="view-loading">Loading view…</div>}>{view === 'presentation' ? <Presentation/> : <SystemDesign/>}</Suspense></section>}
     </section>
   </main>;
