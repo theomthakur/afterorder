@@ -97,12 +97,13 @@ export function App() {
   const boardOrders: OrderSummary[] = REPLAY ? (recordedFinal ? [{ id: recordedFinal.id, displayOrder: recordedFinal.displayOrder, product: recordedFinal.product, status: recordedFinal.status, mode: recordedFinal.mode, selectedSupplier: recordedFinal.selectedSupplier ?? null, retailTotal: recordedFinal.retailTotal, escrowAmount: 0, createdAt: recordedFinal.createdAt ?? recording!.recordedAt, updatedAt: recordedFinal.updatedAt ?? recording!.recordedAt, lastEvent: recordedFinal.events.at(-1)?.message ?? null }] : []) : orders;
   const openOrder = (id: string) => { if (REPLAY) { if (recordedFinal) setSnapshot(recordedFinal); window.location.hash = ''; setView('command'); return; } openOrderId.current = id; setSelected('manager'); void refresh(); window.location.hash = ''; setView('command'); };
   const runFromInbox = async () => { await start(); window.location.hash = ''; setView('command'); };
+  const goIntro = () => { try { sessionStorage.removeItem('ao-entered'); } catch { /* storage unavailable */ } window.location.hash = ''; setEntered(false); };
   const enter = () => { try { sessionStorage.setItem('ao-entered', '1'); } catch { /* storage unavailable */ } setEntered(true); window.location.hash = 'orders'; setView('orders'); };
   if (!entered) return <Landing onEnter={enter}/>;
   const aiDecisions = (snapshot?.events ?? []).filter((item) => ['OfferSelected', 'PlanRevised'].includes(item.type)).map((item) => ({ id: item.id, type: item.type, message: item.message, mode: String((item.metadata as Record<string, unknown> | undefined)?.decisionMode ?? ''), rationale: String((item.metadata as Record<string, unknown> | undefined)?.rationale ?? item.message) }));
   return <main className="app-shell">
     <header className="topbar">
-      <div className="brand"><img className="brand-mark" src="/afterorder-logo.svg" alt=""/><strong>After<span>Order</span></strong><i/><small>COMMERCE, IN MOTION</small></div>
+      <button className="brand brand-home" onClick={goIntro} aria-label="AfterOrder home" title="Back to the intro page"><img className="brand-mark" src="/afterorder-logo.svg" alt=""/><strong>After<span>Order</span></strong><i/><small>COMMERCE, IN MOTION</small></button>
       <div className="topbar-right">
         <span className={`network ${health?.dependencies.monad ? 'live' : ''}`}><i/>{REPLAY ? 'RECORDED SANDBOX REPLAY' : health?.dependencies.monad ? 'MONAD TESTNET · LIVE' : 'LOCAL SANDBOX'}</span>
         <button className={`icon-button notification-button ${notificationsOpen ? 'active' : ''}`} aria-label="Notifications" aria-expanded={notificationsOpen} onClick={() => setNotificationsOpen((value) => !value)}><Bell size={17}/>{alert && <i/>}</button><span className="topbar-divider"/>
