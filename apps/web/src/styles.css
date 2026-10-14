@@ -514,3 +514,15 @@ body:has(.landing) { overflow: auto; }
 .board-card-foot { display: flex; justify-content: space-between; color: #8a84a3; font-size: 10px; margin-top: 2px; }
 .board-empty { padding: 14px 6px; color: #8a84a3; font-size: 11.5px; text-align: center; }
 @media (max-width: 900px) { .board-columns { grid-template-columns: 1fr; } }
+
+/* Board overflow guards */
+.explain-workspace:has(.board-page) { padding: 22px 24px 30px; }
+.board-page, .board-columns, .board-column, .board-cards, .board-card { min-width: 0; max-width: 100%; }
+.board-head { flex-wrap: wrap; }
+.board-head > div { min-width: 0; flex: 1 1 360px; }
+.board-card * { min-width: 0; overflow-wrap: anywhere; }
+.board-card-top b { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.board-card > small { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.board-card-foot span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+@media (max-width: 1180px) { .board-columns { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 760px) { .board-columns { grid-template-columns: 1fr; } }
