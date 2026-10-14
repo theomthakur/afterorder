@@ -12,7 +12,7 @@ const positions: Record<AgentId, V3> = {
 };
 
 const departments: Record<AgentId, { color: string; pale: string; label: string }> = {
-  manager: { color: '#ff6b35', pale: '#fff0e8', label: 'Command' },
+  manager: { color: '#836ef9', pale: '#f1edff', label: 'Command' },
   sourcing: { color: '#16a394', pale: '#e6f5f2', label: 'Sourcing' },
   policy: { color: '#d99b28', pale: '#fff4dc', label: 'Policy' },
   logistics: { color: '#4f7cac', pale: '#eaf0f6', label: 'Logistics' },
@@ -114,7 +114,7 @@ function Station({ agent, selected, onSelect }: { agent: AgentState; selected: b
   const central = agent.id === 'manager'; const department = departments[agent.id]; const size = central ? 3.35 : 2.65; const active = ['working', 'retrying'].includes(agent.status);
   return <group position={positions[agent.id]}>
     <group onClick={(event) => { event.stopPropagation(); onSelect(); }} onPointerOver={() => { document.body.style.cursor = 'pointer'; }} onPointerOut={() => { document.body.style.cursor = 'auto'; }}>
-      <Box position={[0, .035, 0]} size={[size, .05, size]} color={selected ? '#ff6b35' : '#7d8388'} radius={.1}/><Box position={[0, .066, 0]} size={[size - .1, .012, size - .1]} color={central ? '#f7d7c8' : '#e2ded7'} radius={.08}/>
+      <Box position={[0, .035, 0]} size={[size, .05, size]} color={selected ? '#836ef9' : '#8a86a0'} radius={.1}/><Box position={[0, .066, 0]} size={[size - .1, .012, size - .1]} color={central ? '#e6e0ff' : '#ece9f5'} radius={.08}/>
       <Line points={[[ -size/2 + .13, .078, size/2 - .13 ], [ size/2 - .13, .078, size/2 - .13 ], [ size/2 - .13, .078, -size/2 + .13 ], [ -size/2 + .13, .078, -size/2 + .13 ], [ -size/2 + .13, .078, size/2 - .13 ]]} color={selected ? department.color : '#fbfaff'} lineWidth={selected ? 2 : 1}/>
       <group position={[0, .065, .08]}><Desk color={department.color} central={central} active={active}/></group><Plant position={[-size / 2 + .35, .08, -size / 2 + .36]}/>
       <Box position={[size / 2 - .31, .29, -size / 2 + .38]} size={[.38, .42, .43]} color="#f0edf7"/>
@@ -122,8 +122,8 @@ function Station({ agent, selected, onSelect }: { agent: AgentState; selected: b
     </group>
     <Html center position={[0, central ? 2.38 : 2.18, .04]} zIndexRange={[30, 0]}>
       <button className={`station-label ${selected ? 'selected' : ''} ${central ? 'central' : ''}`} style={{ '--agent': department.color, '--agent-pale': department.pale } as CSSProperties} onClick={onSelect}>
-        <span className="station-eyebrow"><i/>{central ? 'CONTROL TOWER' : department.label.toUpperCase()}</span><strong>{agent.name}</strong>
-        <span className={`station-status ${agent.status}`}><i/>{statusCopy[agent.status]}<em>{central ? '5 specialists' : 'Agent desk'}</em></span>
+        {selected && <span className="station-eyebrow"><i/>{central ? 'CONTROL TOWER' : department.label.toUpperCase()}</span>}<strong>{agent.name}</strong>
+        <span className={`station-status ${agent.status}`}><i/>{statusCopy[agent.status]}{selected && <em>{central ? '5 specialists' : 'Agent desk'}</em>}</span>
       </button>
     </Html>
   </group>;

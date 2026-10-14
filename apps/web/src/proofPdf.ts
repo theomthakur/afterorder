@@ -37,7 +37,10 @@ export async function exportProofPdf(url: string) {
   if (!win) return;
   win.document.write('<p style="font-family:sans-serif;padding:24px">Preparing proof report…</p>');
   try {
-    const markdown = await (await fetch(url)).text();
+    const full = await (await fetch(url)).text();
+    // Keep what an operations reader needs: outcome, supplier decision and the dated trail with payment links.
+    const drop = ['Run disclosure', 'Enforced trust boundaries', 'Agent completion record', 'Verification note'];
+    const markdown = full.split(/\n(?=## )/).filter((part) => !drop.some((title) => part.startsWith(`## ${title}`))).join('\n');
     win.document.open();
     win.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>AfterOrder proof report</title><style>
       @page { margin: 16mm; }
