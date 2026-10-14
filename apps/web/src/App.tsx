@@ -93,9 +93,11 @@ export function App() {
   const isComplete = snapshot?.status === 'purchase_complete';
   const isBlocked = snapshot?.status === 'blocked';
 
-  const openOrder = (id: string) => { openOrderId.current = id; setSelected('manager'); void refresh(); window.location.hash = ''; setView('command'); };
+  const recordedFinal = recording?.frames.at(-1)?.snapshot;
+  const boardOrders: OrderSummary[] = REPLAY ? (recordedFinal ? [{ id: recordedFinal.id, displayOrder: recordedFinal.displayOrder, product: recordedFinal.product, status: recordedFinal.status, mode: recordedFinal.mode, selectedSupplier: recordedFinal.selectedSupplier ?? null, retailTotal: recordedFinal.retailTotal, escrowAmount: 0, createdAt: recordedFinal.createdAt ?? recording!.recordedAt, updatedAt: recordedFinal.updatedAt ?? recording!.recordedAt, lastEvent: recordedFinal.events.at(-1)?.message ?? null }] : []) : orders;
+  const openOrder = (id: string) => { if (REPLAY) { if (recordedFinal) setSnapshot(recordedFinal); window.location.hash = ''; setView('command'); return; } openOrderId.current = id; setSelected('manager'); void refresh(); window.location.hash = ''; setView('command'); };
   const runFromInbox = async () => { await start(); window.location.hash = ''; setView('command'); };
-  const enter = () => { try { sessionStorage.setItem('ao-entered', '1'); } catch { /* storage unavailable */ } setEntered(true); if (!REPLAY) { window.location.hash = 'orders'; setView('orders'); } };
+  const enter = () => { try { sessionStorage.setItem('ao-entered', '1'); } catch { /* storage unavailable */ } setEntered(true); window.location.hash = 'orders'; setView('orders'); };
   if (!entered) return <Landing onEnter={enter}/>;
   const aiDecisions = (snapshot?.events ?? []).filter((item) => ['OfferSelected', 'PlanRevised'].includes(item.type)).map((item) => ({ id: item.id, type: item.type, message: item.message, mode: String((item.metadata as Record<string, unknown> | undefined)?.decisionMode ?? ''), rationale: String((item.metadata as Record<string, unknown> | undefined)?.rationale ?? item.message) }));
   return <main className="app-shell">
@@ -113,13 +115,13 @@ export function App() {
     </header>
     <section className={`layout ${view !== 'command' ? 'explain-mode' : ''}`}>
       <aside className="rail" aria-label="Product navigation">
-        {nav.filter((item) => !REPLAY || item.view !== 'orders').map(({ view: destination, label, icon: Icon }) => <button key={label} onClick={() => openView(destination)} className={`rail-button ${view === destination ? 'active' : ''}`} aria-label={label} title={label}><Icon size={18}/>{view === destination && <i/>}</button>)}
+        {nav.map(({ view: destination, label, icon: Icon }) => <button key={label} onClick={() => openView(destination)} className={`rail-button ${view === destination ? 'active' : ''}`} aria-label={label} title={label}><Icon size={18}/>{view === destination && <i/>}</button>)}
         <a className="rail-button rail-github" href="https://github.com/theomthakur/afterorder" target="_blank" rel="noreferrer" aria-label="Source code on GitHub" title="Source code on GitHub"><img src="/logos/github.svg" alt="" width={18} height={18}/></a>
         <div className="rail-bottom"><span title="Supplier APIs connected"><i/></span></div>
       </aside>
       {view === 'command' ? <><section className="workspace">
         <div className="workspace-heading">
-          <div><p className="breadcrumb">{!REPLAY && <button className="crumb-link" onClick={() => openView('orders')}>ORDERS</button>}{REPLAY && 'OPERATIONS'} <span>/</span> {snapshot?.displayOrder ?? 'LIVE COMMAND FLOOR'}</p><div className="title-line"><h1>{snapshot ? `${snapshot.displayOrder} · ${snapshot.product}` : 'Commerce control tower'}</h1><span className="order-badge"><i/>{snapshot ? readable(snapshot.status) : 'ready'}</span></div><p>{snapshot ? `One ${snapshot.sku} · $${snapshot.retailTotal} Shopify test order` : 'Your agents are ready for the next paid order.'}</p></div>
+          <div><p className="breadcrumb"><button className="crumb-link" onClick={() => openView('orders')}>ORDERS</button> <span>/</span> {snapshot?.displayOrder ?? 'LIVE COMMAND FLOOR'}</p><div className="title-line"><h1>{snapshot ? `${snapshot.displayOrder} · ${snapshot.product}` : 'Commerce control tower'}</h1><span className="order-badge"><i/>{snapshot ? readable(snapshot.status) : 'ready'}</span></div><p>{snapshot ? `One ${snapshot.sku} · $${snapshot.retailTotal} Shopify test order` : 'Your agents are ready for the next paid order.'}</p></div>
           <div className="header-metrics">
             <div><span>Supplier</span><strong>{snapshot?.selectedSupplier ?? 'Evaluating'}</strong></div>
             <div><span>Escrow</span><strong>{snapshot?.vault.locked ? `${snapshot.vault.locked} locked` : snapshot?.vault.paid ? `${snapshot.vault.paid} paid` : 'Ready'}</strong></div>
@@ -151,7 +153,7 @@ export function App() {
         <div className="offers">{snapshot?.offers.map((offer) => <div className={`offer ${offer.status}`} key={offer.id}><div><strong>{offer.supplierName}</strong><small>{offer.deliveryDays} business days</small></div><div><b>{offer.total}</b><small>DemoUSD</small></div><span>{readable(offer.status)}</span></div>) ?? <p className="muted">Offers appear when sourcing begins.</p>}</div>
         <div className="section-title"><h3>Live activity</h3><button className="text-btn" onClick={refresh}><RotateCcw size={13}/>Refresh</button></div>
         <div className="feed">{[...(snapshot?.events ?? [])].reverse().map((event) => <article key={event.id}><i/><div><p>{event.message}</p><small>{new Date(event.createdAt).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit',second:'2-digit'})}</small></div></article>)}</div>
-      </aside></> : <section className="explain-workspace"><Suspense fallback={<div className="view-loading">Loading view…</div>}>{view === 'orders' ? <OrdersInbox orders={orders} onOpen={openOrder} onRun={() => void runFromInbox()} running={starting}/> : view === 'presentation' ? <Presentation/> : <SystemDesign/>}</Suspense></section>}
+      </aside></> : <section className="explain-workspace"><Suspense fallback={<div className="view-loading">Loading view…</div>}>{view === 'orders' ? <OrdersInbox orders={boardOrders} onOpen={openOrder} onRun={() => void runFromInbox()} running={starting}/> : view === 'presentation' ? <Presentation/> : <SystemDesign/>}</Suspense></section>}
     </section>
   </main>;
 }
