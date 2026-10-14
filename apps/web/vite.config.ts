@@ -8,6 +8,7 @@ const projectRoot = path.resolve(webRoot, '../..');
 
 export default defineConfig({
   root: webRoot,
+  envDir: projectRoot,
   plugins: [react()],
   server: { port: 5173, proxy: { '/api': 'http://127.0.0.1:4100' } },
   build: { outDir: path.join(projectRoot, 'dist/web'), emptyOutDir: true }

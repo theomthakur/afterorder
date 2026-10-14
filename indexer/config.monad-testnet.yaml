@@ -1,0 +1,22 @@
+# yaml-language-server: $schema=./node_modules/envio/evm.schema.json
+name: afterorder-indexer
+description: Reconciles AfterOrder escrow lifecycle events on Monad testnet
+disable_default_cross_chain: true
+field_selection:
+  transaction_fields:
+    - hash
+chains:
+  - id: 10143
+    # OrderEscrow deployment block on Monad testnet (13 Oct 2026).
+    start_block: 70832900
+    rpc:
+      url: https://testnet-rpc.monad.xyz
+    contracts:
+      - name: OrderEscrow
+        # Live OrderEscrow deployed 13 Oct 2026.
+        address: "0xf7b5e46bcb15282325f5b45d9cc819b08f66ef2b"
+        events:
+          - event: "OrderFunded(bytes32 indexed id, bytes32 indexed mandateId, address indexed supplier, address token, uint256 amount, bytes32 intentHash)"
+          - event: "OrderAccepted(bytes32 indexed id, address indexed supplier)"
+          - event: "OrderReleased(bytes32 indexed id, address indexed supplier, uint256 amount, bytes32 evidenceDigest)"
+          - event: "OrderRefunded(bytes32 indexed id, address indexed merchant, uint256 amount)"
