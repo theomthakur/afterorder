@@ -413,3 +413,33 @@ body:has(.landing) { overflow: auto; }
 .journey { margin-top: 0; border: 1px solid #e4defb; border-radius: 14px; background: #fff; }
 .journey-heading span { color: #6e54ff; }
 .workflow-outcome { margin-top: 12px; }
+
+/* UI polish pass (13 Oct) */
+.journey { padding: 12px 22px 28px; }
+.journey-step:after { margin: 0 10px; }
+.journey-step:first-child small { left: 0; }
+.journey-step:last-child small { left: auto; right: 0; text-align: right; }
+.journey-step small { color: #6b6585; }
+.workspace-heading > div:first-child { min-width: 0; flex: 1; }
+.title-line { min-width: 0; flex-wrap: wrap; row-gap: 4px; }
+.title-line h1 { font-size: clamp(22px, 2.3vw, 32px); line-height: 1.12; white-space: normal; overflow-wrap: anywhere; }
+.header-metrics { align-self: center; }
+.header-metrics > div { min-width: 104px; }
+.workflow-outcome { border-radius: 14px; }
+.scene-area { margin-top: 12px; border-radius: 16px; overflow: hidden; border: 1px solid #ebe6fa; }
+.agent-profile { margin-top: 4px; }
+.facts > div { padding: 9px 10px; }
+.section-title { margin-top: 14px; }
+.feed article { padding: 9px 0; }
+
+/* Scroll fix: the panel must fit the window so its last items are reachable. */
+.app-shell { min-height: 0; }
+.layout { min-height: 0; }
+.context { min-height: 0; max-height: 100%; overflow-y: auto; padding-bottom: 48px; }
+.workspace { min-height: 0; }
+
+/* Journey: keep end labels inside the card and give the line breathing room. */
+.journey { padding-left: 22px; padding-right: 22px; padding-bottom: 28px; }
+.journey-step:after { margin: 0 10px; }
+.journey-step:first-child small { left: 0; }
+.journey-step:last-child small { left: auto; right: 0; text-align: right; }
