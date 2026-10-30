@@ -4,18 +4,17 @@
 
 # AfterOrder
 
-**From order to fulfilment, with agents accountable for every purchase.**
+**Turn a paid order into a supplier purchase without giving an agent unlimited authority.**
 
-AfterOrder turns a paid Shopify order into a bounded supplier purchase. A manager agent asks
-specialists to source offers, apply merchant rules, reserve inventory, fund supplier escrow,
-coordinate dispatch and reconcile Shopify. The whole journey appears in a live 3D command
-center, including failures and replanning.
+**Hosted replay:** [afterorder-six.vercel.app](https://afterorder-six.vercel.app) · **Source:** [GitHub](https://github.com/theomthakur/afterorder)
 
-The canonical demo is deliberately small and real: Northstar quotes the lowest price but its
-reservation fails because the last unit is gone. The manager automatically switches to Harbor
-Works without changing the merchant's 40 DemoUSD limit.
+AfterOrder receives a signed Shopify order, compares approved supplier offers, reserves inventory, and releases testnet payment only when the merchant's rules and dispatch evidence are satisfied. The interface shows each decision, failure, retry, and payment event.
 
-## Live status (13 Oct 2026, Monad Metropolis submission)
+The demonstration is intentionally small: Northstar offers the lowest price, but its final unit is gone. The workflow switches to Harbor Works while preserving the merchant's 40 DemoUSD spending limit.
+
+## Verified demonstration from 13 October 2026
+
+The following integrations were exercised for the recorded hackathon demonstration. Reproducing the live path requires your own development accounts, credentials, and testnet funds; the repository also includes a clearly labelled local sandbox path.
 
 | Integration | Status | Evidence |
 |---|---|---|
@@ -27,7 +26,7 @@ Works without changing the merchant's 40 DemoUSD limit.
 
 Order #1001 on Monad: [escrow funded](https://testnet.monadvision.com/tx/0x9b5ef305d5bd804642a8df00a3fe60134d9d4710d1beaa171aa14a34f4d7a1e6) · [supplier accepted](https://testnet.monadvision.com/tx/0xe7ac00ff086fbeaca8e22a0146660ad5e097fddafe57e961060c6944cf578240) · [released on signed dispatch evidence](https://testnet.monadvision.com/tx/0x7165bcd50688ce3f5cd815b4c4316bb96f175a4a23c86698c6b6dd1cd9f54ac2)
 
-The app opens on an intro page. **Try it out** goes to the command center, where you can instruct the manager agent in chat (sandbox order) or let a paid Shopify order start a live run. Full submission notes: [`docs/12-SUBMISSION-2026-10-13.md`](docs/12-SUBMISSION-2026-10-13.md).
+The app opens on an introduction page. **Try it out** opens the command center, where a sandbox order can be started from chat or a configured Shopify webhook can start the live path. Full demonstration notes are in [`docs/12-SUBMISSION-2026-10-13.md`](docs/12-SUBMISSION-2026-10-13.md).
 
 ### Run live locally
 
@@ -174,9 +173,8 @@ docs/                     event, track and resource decisions
 AFTERORDER-MASTER-IMPLEMENTATION-PLAN.md
 ```
 
-## Honest boundary
+## Current limits
 
-The local prototype is complete and testable. Live Shopify, Dynamic, Monad, Envio and hosted
-deployment still require their respective development accounts, tokens and testnet funding.
-Those missing external values are setup work, not code paths disguised as completed features.
-The demo uses synthetic commerce data and DemoUSD has no monetary value.
+The local prototype is complete and testable. Running the external integrations again requires Shopify, Dynamic, Monad, Envio, and model-provider development credentials plus testnet funding. The hosted page is a recorded sandbox replay, not a live purchasing system. The demonstration uses synthetic commerce data, and DemoUSD has no monetary value.
+
+Built by [Om Thakur](https://theomthakur.github.io/portfolio) · [LinkedIn](https://www.linkedin.com/in/theomthakur/)
